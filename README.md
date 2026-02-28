@@ -1,10 +1,22 @@
 # RokuNana-s-Project
 Allowing LLMs to do Multi-Party chat (with multiple users)
+# Table of Contents
+- [Project presentation](#project-presentation)
+- [Setup Instructions](#setup-instructions)
 # Project presentation
 
 Pipeline chart:
 
 <img width="3219" height="3273" alt="image" src="https://github.com/user-attachments/assets/8d625780-db2a-4f01-950c-97d9bae0df4d" />
+
+# Pipeline description:
+
+1. The user initiates a conversation with the system, which is designed to handle multi-party interactions.
+2. The system processes the user's input and generates a response using a language model (LLM), which is capable of understanding and managing conversations with multiple participants.
+3. The system then checks if the response contains any actionable items, such as scheduling a meeting or setting a reminder.
+4. If actionable items are detected, the system interacts with the Google Calendar API to perform the necessary actions, such as creating events or sending invitations.
+5. The system continues the conversation, allowing for further interactions and updates as needed.
+
 
 # Setup Instructions
 1. Clone the repository and navigate to the project directory.
