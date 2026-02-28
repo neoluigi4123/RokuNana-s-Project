@@ -27,7 +27,7 @@ AI = LLM(
     model_name=config.DEFAULT_MODEL,
     client="https://api.mistral.ai",
     system_prompt=config.SYSTEM_PROMPT,
-    api_key=config.MISTRAL_API_KEY,
+    api_key=config.MISTRAL_API_KEY, # type: ignore
 )
 
 intents = discord.Intents.default()
@@ -244,4 +244,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    client.run(config.DISCORD_BOT_TOKEN)
+    client.run(config.DISCORD_BOT_TOKEN) # type: ignore
