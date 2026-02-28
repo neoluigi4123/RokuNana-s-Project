@@ -4,12 +4,10 @@ Main module for the RokuNana's Project. This is where the main execution of the 
 To-Do:
 - Modulate wait time based on activity (e.g., more active channels get shorter wait times)
 - Fix mentions in replies
-- Fix \n in replies and * in tools/msg_schema
 - Script support (sandboxing required)
 - TTS support as real voice messages (not just attachments)
 - Media support (voice messages)
 - Typing animation
-- removes hypertext from voice messages
 """
 
 import discord
@@ -103,6 +101,12 @@ async def on_message(msg):
                 await attachment.save(file_path)
                 
                 image_paths.append(file_path)
+
+    if msg.mentions:
+        for user in msg.mentions:
+            mention_str = f"<@{user.id}>"
+            if mention_str in msg.content:
+                msg.content = msg.content.replace(mention_str, f"@{user.name}")
 
     message_data: dict = {
         "role": "user",
