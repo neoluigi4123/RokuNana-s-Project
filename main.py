@@ -187,6 +187,12 @@ async def main():
             print(f"Error generating response: {e}")
             pass
 
+        while AI.state['thinking']:
+            await asyncio.sleep(1)
+            
+        async with last_channel.typing():
+            await asyncio.sleep(1)
+
         while AI.state['done'] is False:
             await asyncio.sleep(1)
         
