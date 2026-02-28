@@ -47,45 +47,6 @@ def web(query: str, num_results: int = 5) -> str:
         results = DDGS().text(query, max_results=num_results)
         return results
 
-def gif(query: str) -> str:
-    """
-    Search Giphy for a GIF and return a random URL from the top results.
-
-    Args:
-        query (str): The search query for the GIF.
-
-    Returns:
-        str: URL of a random GIF from the search results or an error message.
-    """
-    API_KEY = config.GIF_TOKEN
-    url = "https://api.giphy.com/v1/gifs/search"
-    
-    params = {
-        "q": query,
-        "api_key": API_KEY,
-        "limit": 5,
-        "rating": "g"
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-
-        if response.status_code == 200:
-            gifs = data.get("data", [])
-            if gifs:
-                # pick a random gif from the results
-                choice = random.choice(gifs)
-                return choice["images"]["original"]["url"]
-            else:
-                return "No GIFs found for the query."
-        else:
-            return f"Error: Received status code {response.status_code} from Giphy API."
-
-    except Exception as e:
-        return f"An error occurred: {e}"
-
 def youtube(query: str) -> str:
     """
     Search for a YouTube video and return the URL for the first result.
