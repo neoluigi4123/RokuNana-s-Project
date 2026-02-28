@@ -7,8 +7,10 @@ import asyncio
 import time
 import os
 
+
 from core import LLM
 import config
+import rag_embedding
 
 WAIT = 20
 
@@ -161,7 +163,7 @@ async def main():
         time_diff = int(time.time() - last_message_timestamp if last_message_timestamp else 0)
         
         try:
-            await asyncio.to_thread(AI.generate_response, rag = f"{RAG_results}Last activity {time_diff} sec ago." if RAG_results else f"Last activity {time_diff} sec ago.")
+            await asyncio.to_thread(AI.generate, rag = f"{RAG_results}Last activity {time_diff} sec ago." if RAG_results else f"Last activity {time_diff} sec ago.")
         except Exception as e:
             print(f"Error generating response: {e}")
             pass
