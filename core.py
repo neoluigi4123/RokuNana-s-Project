@@ -620,6 +620,7 @@ if __name__ == "__main__":
         model_name="mistral-large-latest",
         client="https://api.mistral.ai",
         system_prompt=config.SYSTEM_PROMPT,
+        api_key=config.MISTRAL_API_KEY,
     )
 
     r = AI.generate(
