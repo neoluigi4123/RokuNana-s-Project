@@ -584,6 +584,8 @@ class LLM:
             message = _get_field("reply", constructed_response)
             if message is not None:
                 self.reply["message"] = message
+                self.state["thinking"] = 0
+                self.state["Replying"] = 1
                 self.state["done"] = 1
 
             attachments = _get_array_field("attachments", constructed_response)

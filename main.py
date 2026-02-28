@@ -6,7 +6,6 @@ To-Do:
 - Script support (sandboxing required)
 - TTS support as real voice messages (not just attachments)
 - Media support (voice messages)
-- Typing animation
 """
 
 import discord
@@ -200,6 +199,13 @@ async def main():
         except Exception as e:
             print(f"Error generating response: {e}")
             pass
+
+        while AI.state['thinking']:
+            await asyncio.sleep(1)
+        
+        if last_channel:
+            async with last_channel.typing():
+                await asyncio.sleep(1)
 
         while AI.state['done'] is False:
             await asyncio.sleep(1)
