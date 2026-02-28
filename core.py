@@ -185,7 +185,7 @@ class LLM:
         resp.raise_for_status()
         return resp if stream else resp.json()
 
-    def transcribe_audio(self, audio_path: str) -> Optional[str]:
+    def transcribe_audio(self, audio_path: str, biases: str) -> Optional[str]:
         api_key = self.api_key
         model = config.DEFAULT_TTS_MODEL
 
@@ -196,6 +196,7 @@ class LLM:
                 file=File(content=f, file_name=f.name),
                 diarize=True,
                 timestamp_granularities=["segment"],
+                context_bias=biases,
             )
             result = ""
             for segment in response.segments: # type: ignore

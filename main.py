@@ -95,7 +95,6 @@ async def on_message(msg):
     timestamp_str = msg.created_at.strftime("%a %H:%M")
 
     image_paths = []
-    audio_paths = []
 
     if msg.attachments:
         for attachment in msg.attachments:
@@ -112,7 +111,9 @@ async def on_message(msg):
                 file_path = os.path.join(download_dir, filename)
                 await attachment.save(file_path)
                 
-                transcription = AI.transcribe_audio(file_path)
+                transcription = AI.transcribe_audio(file_path, msg.author)
+
+                AI.add_to_context(f"{msg.author} send an audio file: {transcription}")
 
     if msg.mentions:
         for user in msg.mentions:
