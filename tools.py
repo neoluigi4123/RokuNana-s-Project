@@ -49,11 +49,11 @@ def web(query: str, num_results: int = 5) -> str:
 
 def gif(query: str) -> str:
     """
-    Searches for a GIF on Giphy and returns a random URL from the first 5 results.
-    
+    Search Giphy for a GIF and return a random URL from the top results.
+
     Args:
         query (str): The search query for the GIF.
-    
+
     Returns:
         str: URL of a random GIF from the search results or an error message.
     """
@@ -71,18 +71,20 @@ def gif(query: str) -> str:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         if response.status_code == 200:
-            data = response.json()
-            if data["data"]:
-                return data["data"][0]["images"]["original"]["url"]
+            gifs = data.get("data", [])
+            if gifs:
+                # pick a random gif from the results
+                choice = random.choice(gifs)
+                return choice["images"]["original"]["url"]
             else:
-                return("No GIFs found for the query.")
+                return "No GIFs found for the query."
         else:
-            return(f"Error: Received status code {response.status_code} from Giphy API.")
+            return f"Error: Received status code {response.status_code} from Giphy API."
 
     except Exception as e:
-        return(f"An error occurred: {e}")
+        return f"An error occurred: {e}"
 
 def youtube(query: str) -> str:
     """
