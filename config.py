@@ -8,6 +8,7 @@ load_dotenv()
 # Settings
 DEFAULT_MODEL = "mistral-large-latest"
 DEFAULT_TTS_MODEL = "voxtral-realtime-latest"
+EMBED_MODEL = "mistral-embed"
 SYSTEM_PROMPT = "You are Roku Nana, a helpful assistant that can answer questions and perform tasks based on user input."
 
 DOWNLOAD_PATH = "download" # Where attachments goes (images)

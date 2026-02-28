@@ -28,6 +28,8 @@ current_context = []
 wait_time = WAIT
 last_channel = None
 
+new_message_event = asyncio.Event()
+
 @client.event
 async def on_ready():
     client.loop.create_task(main())
@@ -129,7 +131,7 @@ async def main():
         new_message_event.clear()
 
         # Summary
-        if len(AI.context) > config.MAX_LENGTH: # Default: 15 for stability, 40 for deployment (but can cause more repetition as of now)
+        if len(AI.context) > 15:
             AI.summarize_chat(10)
 
         new_messages = current_context[len(chat_history):]

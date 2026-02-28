@@ -1,4 +1,4 @@
-dotenv
+python-dotenv
 mistralai
-mistral
+chromadb
 discord.py
