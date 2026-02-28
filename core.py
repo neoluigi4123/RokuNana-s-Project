@@ -4,6 +4,8 @@ Core module where the llm agent is implemented.
 import config
 from mistralai import Mistral
 from typing import Any
+import os
+import json
 
 class LLM:
     def __init__(self, model: str, api_key: str = str(config.MISTRAL_API_KEY)):
@@ -15,7 +17,7 @@ class LLM:
                 "content": config.SYSTEM_PROMPT,
             }
         ]
-def generate(self, prompt: str):
+    def generate(self, prompt: str):
         """Generates a response from the LLM based on the given prompt.
         Args:
             prompt (str): The input prompt to generate a response for.
@@ -31,11 +33,10 @@ def generate(self, prompt: str):
             chat_response = self.client.chat.complete(
                 model = self.model,
                 messages = self.context,
-                tool_choice = "auto"  # 'auto' lets the model decide when to answer or use a tool
             )
             result = chat_response.choices[0].message
 
-def add_to_context(self, content: str, role: str = 'user') -> None:
+    def add_to_context(self, content: str, role: str = 'user') -> None:
         """Adds contents to the context.
         Args:
             role (str): the role of the message(can be: "user","system","assistant").
@@ -55,8 +56,10 @@ def add_to_context(self, content: str, role: str = 'user') -> None:
         except Exception as e:
             print(f"Error saving context: {e}")
 
+        
+
 if __name__ == "__main__":
-    assistant = llm(model=config.DEFAULT_MODEL)
-    response = assistant.generate("When's the release of the movie in 2026 of the Super Mario Bros the movie 2 aka mario galaxy the movie?")
+    assistant = LLM(model=config.DEFAULT_MODEL)
+    response = assistant.generate("What is the capital of France?")
     print(response)
     print(f"context:\n{assistant.context}")
