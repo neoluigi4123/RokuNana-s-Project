@@ -27,6 +27,6 @@ def generate(msg: str, filename="output.mp3"):
     tts_path = generate_tts(msg, filename)
 
 if __name__ == "__main__":
-    test_msg = "Salut tout le monde! Je me presente, je suis KawaiiBaka, et euh... J'aime bien les animes ahah! ah... Enfin, j'reste chez moi souvent hihi."
+    test_msg = "Salut tout le monde! Je me presente, je suis RokuNana, et euh... Roku Nana!"
     output_path = generate(test_msg, "output.mp3")
     print(f"Audio generated and saved to {output_path}")
