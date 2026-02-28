@@ -111,7 +111,7 @@ async def on_message(msg):
                 file_path = os.path.join(download_dir, filename)
                 await attachment.save(file_path)
                 
-                transcription = AI.transcribe_audio(file_path, msg.author)
+                transcription = AI.transcribe_audio(file_path, msg.author.name)
 
                 AI.add_to_context(f"{msg.author} send an audio file: {transcription}")
 
