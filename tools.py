@@ -8,8 +8,8 @@ import yt_dlp
 import trafilatura
 
 import config
-import scripting
-from 11labs_module import generate_audio
+# import scripting
+# from elevenlabs_module import generate_audio
 
 def web(query: str, num_results: int = 5) -> str:
     """
@@ -105,10 +105,12 @@ def youtube(query: str) -> str:
         return f"Error: {e}"
 
 def python_execution(script: str):
-    return scripting.run_script(script)
+    pass
+    # return scripting.run_script(script)
 
 def voice_message_generation(input):
-    return generate_audio(input)
+    pass
+    # return generate_audio(input)
 
 if __name__ == "__main__":
     # Example usage
