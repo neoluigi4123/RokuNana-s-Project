@@ -1,7 +1,6 @@
 """
 Config module for storing api keys, model names, and other configuration variables.
 """
-import os
 from dotenv import dotenv_values
 
 # Charge les variables directement depuis .env (contourne les variables système)
