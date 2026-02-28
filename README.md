@@ -3,7 +3,6 @@ Allowing LLMs to do Multi-Party chat (with multiple users)
 # Table of Contents
 - [Project presentation](#project-presentation)
 - [Setup Instructions](#setup-instructions)
-- [Gif Token Setup](#gif-token-setup)
 # Project presentation
 
 Pipeline chart:
@@ -84,15 +83,6 @@ Pipeline chart:
 ![bandicam 2026-02-28 16-13-35-030](https://github.com/user-attachments/assets/8a2ecdd2-12e3-4b64-94d0-f8d67187284c)
 ![bandicam 2026-02-28 16-13-46-205](https://github.com/user-attachments/assets/7316d381-4feb-4508-8d9a-4687c9e78393)
 
-# Gif Token Setup
-1. Go to the [Giphy Developers](https://developers.giphy.com/) website and sign up for an account if you don't have one.
-2. Once you have an account, navigate to the "Create an App" section.
-3. Fill in the required information for your application, such as the name and description.
-4. After creating the app, you will be provided with an API key (also known as a token). Copy this API key.
-5. Create a file named `config.py` in the root directory of the project and add the following line, replacing `YOUR_GIPHY_API_KEY` with the API key you copied:
-   ```python   
-   GIPHY_API_KEY = 'YOUR_GIPHY_API_KEY'
-   ```
 
 6. Run the main application:
     ```bash
