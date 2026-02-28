@@ -102,6 +102,7 @@ async def on_message(msg):
                 await attachment.save(file_path)
                 
                 image_paths.append(file_path)
+                
             #audio
             if attachment.content_type and attachment.content_type.startswith('audio/'):
                 filename = f"{msg.id}_{attachment.filename}" 
