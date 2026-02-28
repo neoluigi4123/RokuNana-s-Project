@@ -15,7 +15,12 @@ import rag_embedding
 WAIT = 20
 
 download_dir = config.DOWNLOAD_PATH
-AI = LLM(config.DEFAULT_MODEL)
+AI = LLM(
+    model_name=config.DEFAULT_MODEL,
+    client="https://api.mistral.ai",
+    system_prompt=config.SYSTEM_PROMPT,
+    api_key=config.MISTRAL_API_KEY,
+)
 
 intents = discord.Intents.default()
 intents.messages = True
