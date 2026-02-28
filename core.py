@@ -39,23 +39,38 @@ class LLM:
             result = chat_response.choices[0].message
         return result
 
-    def add_to_context(self, content: str, role: str = 'user') -> None:
-        """Adds contents to the context.
-        Args:
-            role (str): the role of the message(can be: "user","system","assistant").
-            content (str): the content of the message.
-        Returns:
-            None.
-        """
-        self.context.append({
-            "role": role,
-            "content": content
-        })
+    def _encode_image(self, image_path: str) -> str:
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+
+    def add_to_context(
+        self,
+        content: str,
+        role: str = 'user',
+        images: list[str] | None = None,
+    ) -> None:
+        message: dict = {"role": role, "content": content}
+
+        if images:
+            encoded_images = []
+            for img_path in images:
+                try:
+                    b64_img = self._encode_image(img_path)
+                    encoded_images.append(b64_img)
+                except Exception as e:
+                    print(f"Error encoding image {img_path}: {e}")
+            if encoded_images:
+                message["images"] = encoded_images
+            
+        self.context.append(message)
+
         try:
-            directory = os.path.dirname("local_data/context.json")
-            os.makedirs(directory, exist_ok=True)
-            with open("local_data/context.json", "w", encoding="utf-8") as f:
-                json.dump(self.context, f, ensure_ascii=False, indent=2)
+            with open("context.json", "w", encoding="utf-8") as f:
+                log_context = copy.deepcopy(self.context)
+                for msg in log_context:
+                    if "images" in msg:
+                        msg["images"] = ["<base64_image_data>"]
+                json.dump(log_context, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Error saving context: {e}")
 
