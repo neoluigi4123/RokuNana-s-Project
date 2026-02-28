@@ -5,7 +5,6 @@ To-Do:
 - Modulate wait time based on activity (e.g., more active channels get shorter wait times)
 - Script support (sandboxing required)
 - TTS support as real voice messages (not just attachments)
-- Media support (voice messages)
 """
 
 import discord
@@ -65,6 +64,8 @@ async def on_message(msg):
 
     if msg.author == client.user:
         return
+    
+    content = "" # Final message content placeholder for context
 
     last_message_timestamp = time.time()
 
@@ -113,7 +114,7 @@ async def on_message(msg):
                 
                 transcription = AI.transcribe_audio(file_path, msg.author.name)
 
-                AI.add_to_context(f"{msg.author} send an audio file: {transcription}")
+                content += (f"send an audio file: {transcription}")
 
     if msg.mentions:
         for user in msg.mentions:
@@ -121,9 +122,11 @@ async def on_message(msg):
             if mention_str in msg.content:
                 msg.content = msg.content.replace(mention_str, f"@{user.name}")
 
+    content += msg.content
+
     message_data: dict = {
         "role": "user",
-        "content": f"[{timestamp_str}] {msg.author.name}: {msg.content}"
+        "content": f"[{timestamp_str}] {msg.author.name}: {content}"
     }
 
     if image_paths:
