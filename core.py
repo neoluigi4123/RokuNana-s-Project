@@ -59,20 +59,14 @@ class LLM:
         except Exception as e:
             print(f"Error saving context: {e}")
 
-    def summarize_chat(self, num: int = 15) -> None:
-        """Summarizes the chat history to keep it within a certain length.
-        Args:
-            max_length (int): The maximum number of messages to keep in the context.
-        Returns:
-            None.
-        """
+    def summarize_chat(self, num: int = 10):
         if len(self.context) <= num:
             return
 
         to_summarize = self.context[:num]
         keep_rest = self.context[num:]
 
-                # ── Strip base64 image data before serializing ──────────────
+        # Strip base64 image data before serializing
         sanitized = copy.deepcopy(to_summarize)
         for msg in sanitized:
             if "images" in msg:
@@ -85,12 +79,14 @@ class LLM:
         )
 
         try:
-            chat_response = self.client.chat.complete(
-                model=self.model,
-                messages=[{"role": "user", "content": summarization_prompt}],
-                max_tokens=1024,          # bound the summary length
+            result = self.client.chat.complete(
+                model = self.model,
+                messages = [{"role": "user", "content": summarization_prompt}],
+                stream=False
             )
-            summary_text = chat_response.choices[0].message.content.strip()
+            summary_text = (
+                result.choices[0].message.content
+            )
         except Exception as e:
             print(f"Summarization failed: {e}")
             return
@@ -111,12 +107,6 @@ class LLM:
                 json.dump(log_context, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Error saving context: {e}")
-
-
-
-
-
-
 
 if __name__ == "__main__":
     assistant = LLM(model=config.DEFAULT_MODEL)
