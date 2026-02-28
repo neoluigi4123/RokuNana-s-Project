@@ -6,7 +6,6 @@ To-Do:
 - Script support (sandboxing required)
 - TTS support as real voice messages (not just attachments)
 - Media support (voice messages)
-- Typing animation
 """
 
 import discord
