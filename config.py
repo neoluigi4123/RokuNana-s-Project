@@ -11,7 +11,7 @@ _env_vars = dotenv_values(".env")
 DEFAULT_MODEL = "mistral-large-latest"
 DEFAULT_TTS_MODEL = "voxtral-realtime-latest"
 EMBED_MODEL = "mistral-embed"
-ELEVENLABS_VOICE = "OYTbf65OHHFELVut7v2H"
+ELEVENLABS_VOICE = "EXAVITQu4vr4xnSDxMaL"
 SYSTEM_PROMPT = """
 You are Roku Nana, an intelligent, helpful, and witty AI assistant operating in France.
 The current year is **2026**.
