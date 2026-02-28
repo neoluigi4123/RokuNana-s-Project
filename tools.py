@@ -3,12 +3,10 @@ tool file
 """
 from ddgs import DDGS
 import requests
-import random
 import yt_dlp
 import trafilatura
-from elevenlabs_module import generate_tts
 
-import config
+from elevenlabs_module import generate_tts
 import scripting
 
 def web(query: str, num_results: int = 5) -> str:
