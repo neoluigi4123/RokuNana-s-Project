@@ -25,6 +25,7 @@ def generate_tts(msg: str, filename="output.mp3") -> str:
 
 def generate(msg: str, filename="output.mp3"):
     tts_path = generate_tts(msg, filename)
+    return tts_path
 
 if __name__ == "__main__":
     test_msg = "Salut tout le monde! Je me presente, je suis RokuNana, et euh... Roku Nana!"
