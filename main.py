@@ -23,6 +23,8 @@ load_dotenv()
 WAIT = 20
 
 download_dir = config.DOWNLOAD_PATH
+os.makedirs(download_dir, exist_ok=True) 
+
 AI = LLM(
     model_name=config.DEFAULT_MODEL,
     client="https://api.mistral.ai",
@@ -102,7 +104,7 @@ async def on_message(msg):
                 await attachment.save(file_path)
                 
                 image_paths.append(file_path)
-                
+
             #audio
             if attachment.content_type and attachment.content_type.startswith('audio/'):
                 filename = f"{msg.id}_{attachment.filename}" 
