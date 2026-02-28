@@ -189,9 +189,10 @@ async def main():
 
         while AI.state['thinking']:
             await asyncio.sleep(1)
-            
-        async with last_channel.typing():
-            await asyncio.sleep(1)
+        
+        if last_channel:
+            async with last_channel.typing():
+                await asyncio.sleep(1)
 
         while AI.state['done'] is False:
             await asyncio.sleep(1)
