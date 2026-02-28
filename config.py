@@ -11,6 +11,7 @@ _env_vars = dotenv_values(".env")
 DEFAULT_MODEL = "mistral-large-latest"
 DEFAULT_TTS_MODEL = "voxtral-realtime-latest"
 EMBED_MODEL = "mistral-embed"
+ELEVENLABS_VOICE = "OYTbf65OHHFELVut7v2H"
 SYSTEM_PROMPT = """
 You are Roku Nana, an intelligent, helpful, and witty AI assistant operating in France.
 The current year is **2026**.
@@ -200,3 +201,4 @@ DOWNLOAD_PATH = "download" # Where attachments goes (images)
 # API Keys (depuis .env, pas depuis variables système)
 MISTRAL_API_KEY = _env_vars.get("MISTRAL_API_KEY")
 DISCORD_BOT_TOKEN = _env_vars.get("DISCORD_BOT_TOKEN")
+ELEVEN_LABS_API_KEY = _env_vars.get("ELEVENLABS_API_KEY")
