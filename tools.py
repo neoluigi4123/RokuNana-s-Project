@@ -8,8 +8,8 @@ import yt_dlp
 import trafilatura
 
 import config
-# import scripting
-# from elevenlabs_module import generate_audio
+import scripting
+#from elevenlabs_module import generate_audio
 
 def web(query: str, num_results: int = 5) -> str:
     """
@@ -108,13 +108,50 @@ def youtube(query: str) -> str:
     except Exception as e:
         return f"Error: {e}"
 
-def python_execution(script: str):
-    pass
-    # return scripting.run_script(script)
+def python_execution(script: str, timeout: int = 30) -> str:
+    """
+    Execute Python code safely within the AI assistant.
+    
+    Args:
+        script (str): Python code to execute
+        timeout (int): Maximum execution time in seconds (default: 30)
+    
+    Returns:
+        str: Output from the script or error message
+    """
+    # Validate script first
+    validation = scripting.validate_script(script)
+    if not validation['valid']:
+        return f"Syntax Error: {validation['error']}"
+    
+    if validation['warnings']:
+        warning_msg = "Warnings:\n" + "\n".join(f"  - {w}" for w in validation['warnings'])
+    else:
+        warning_msg = ""
+    
+    # Execute the script
+    result = scripting.run_script(script, timeout=timeout)
+    
+    if not result['success']:
+        error_msg = f"Execution Failed:\n{result['error']}"
+        if result.get('output'):
+            error_msg += f"\n\nPartial Output:\n{result['output']}"
+        return error_msg
+    
+    # Success
+    output = f"Script executed successfully in {result['execution_time']:.2f}s\n"
+    if warning_msg:
+        output += f"\n{warning_msg}\n"
+    if result['output']:
+        output += f"\nOutput:\n{result['output']}"
+    else:
+        output += "\n(No output produced)"
+    
+    return output
 
 def voice_message_generation(input):
     pass
-    # return generate_audio(input)
+    #return generate_audio(input)
 
 if __name__ == "__main__":
     # Example usage
