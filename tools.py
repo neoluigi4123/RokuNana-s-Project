@@ -58,29 +58,33 @@ def gif(query: str) -> str:
         str: URL of a random GIF from the search results or an error message.
     """
     API_KEY = config.GIF_TOKEN
-    url = "https://api.giphy.com"
+    url = "https://api.giphy.com/v1/gifs/search"
     
     params = {
         "q": query,
-        "key": API_KEY,
+        "api_key": API_KEY,
         "limit": 5,
-        "media_filter": "minimal"
+        "rating": "g"
     }
 
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data["data"]:
+                print("Success: Here is a GIF URL:")
+                print(data["data"][0]["images"]["original"]["url"])
+            else:
+                print("No GIFs found for the query.")
+        else:
+            print(f"Error: Received status code {response.status_code} from Giphy API.")
+            print(response.text)
 
-        if "results" in data and len(data["results"]) > 0:
-            top_five_results = data["results"][:5]  # Get only the first 5 results
-            random_gif = random.choice(top_five_results)  # Select a random GIF from these
-            return random_gif["media_formats"]["gif"]["url"]
-
-        return "No GIF found."
-
-    except requests.exceptions.RequestException as e:
-        return f"Error: {e}"
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 def youtube(query: str) -> str:
     """
