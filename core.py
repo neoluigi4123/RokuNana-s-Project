@@ -199,7 +199,7 @@ class LLM:
             for segment in response.segments:
                 speaker = segment.speaked_id or "unknown"
                 print(
-                    f"[{segment.start:.1f}s ]" → {segment.end:.1f}s] {speaker}: {segment.text.strip()}"
+                    f"[{segment.start:.1f}s → {segment.end:.1f}s] {speaker}: {segment.text.strip()}"
                 )
 
     def add_to_context(
