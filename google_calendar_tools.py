@@ -97,7 +97,7 @@ def _utc_iso(dt: datetime) -> str:
     return dt.isoformat() + "Z"
 
 
-def _resolve_date(date: str = None) -> datetime:
+def _resolve_date(date: str = None) -> datetime: # type: ignore
     """
     Resolve a date string (YYYY-MM-DD, 'today', 'tomorrow') into a datetime
     at midnight. Defaults to today if None.
@@ -123,7 +123,7 @@ def _resolve_date(date: str = None) -> datetime:
 # ─── TOOL: GET EVENT ────────────────────────────────────────────────────────
 
 
-def get_event(date: str = None) -> list[dict]:
+def get_event(date: str = None) -> list[dict]: # type: ignore
     """
     Get events for a given date.
 
@@ -190,7 +190,7 @@ def search_event(query: str, days: int = 30) -> list[dict]:
 def create_event(
     title: str,
     date: str,
-    time: str = None,
+    time: str = None, # type: ignore
 ) -> dict:
     """
     Create a calendar event.
@@ -245,9 +245,9 @@ def create_event(
 
 def update_event(
     event_id: str,
-    title: str = None,
-    date: str = None,
-    time: str = None,
+    title: str = None, # type: ignore
+    date: str = None, # type: ignore
+    time: str = None, # type: ignore
 ) -> dict:
     """
     Update fields on an existing event. Only provided fields are changed.
