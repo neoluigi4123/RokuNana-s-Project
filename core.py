@@ -190,7 +190,7 @@ class LLM:
         model = config.DEFAULT_TTS_MODEL
 
         client = Mistral(api_key=api_key)
-        with open("voice-message.ogg", "rb") as f:
+        with open(audio_path, "rb") as f:
             response = client.audio.transcriptions.complete(
                 model=model,
                 file=File(content=f, file_name=f.name),
@@ -635,3 +635,6 @@ if __name__ == "__main__":
     )
 
     print(r)
+
+    # Transcription test
+    print(f"Audio Transcription:\n{AI.transcribe_audio(audio_path="output.mp3")}")
