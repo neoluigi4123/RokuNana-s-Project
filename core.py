@@ -384,13 +384,13 @@ class LLM:
                 messages.append({"role": role, "content": msg["content"]})
 
         # Schema reminder just before generation
-        # messages.append({
-        #     "role": "system",
-        #     "content": (
-        #         f"{schema_json}\n"
-        #         "Follow this schema strictly. Do not repeat your last message."
-        #     ),
-        # })
+        messages.append({
+            "role": "system",
+            "content": (
+                f"{schema_json}\n"
+                "Follow this schema strictly. Do not absolutely repeat your last message."
+            ),
+        })
 
         # RAG as assistant prefill
         if rag is not None:

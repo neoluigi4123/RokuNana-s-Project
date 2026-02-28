@@ -3,8 +3,8 @@ Main module for the RokuNana's Project. This is where the main execution of the 
 ---
 To-Do:
 - Modulate wait time based on activity (e.g., more active channels get shorter wait times)
-- Enhance system prompt to be less chatty
 - Add NLP support to calendar tools
+- Fix mentions in replies
 """
 
 import discord
