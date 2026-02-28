@@ -418,6 +418,16 @@ class LLM:
         constructed_response = ""
         tool_called = False
 
+        CALENDAR_TOOL_TYPES = {
+            "getEvent",
+            "searchEvent",
+            "createEvent",
+            "updateEvent",
+            "deleteEvent",
+            "findFreeSlot",
+            "dailySummary",
+        }
+
         def _get_field(key: str, text: str) -> Optional[str]:
             """Extract a JSON string value by key."""
             pattern = rf'"{key}"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"'
@@ -471,6 +481,7 @@ class LLM:
                     if not tool_called and "type" in tool_obj:
                         print(f"Tool found: {tool_obj['type']}")
 
+                        # Basic tools
                         if tool_obj["type"] == "browsing":
                             query = tool_obj["query"]
                             mode = tool_obj["mode"]
@@ -525,6 +536,35 @@ class LLM:
                                 f"Added attachment from path: {file_path}",
                                 role="tool",
                             )
+                        
+                        # Calendar tools
+                        if tool_obj["type"] in CALENDAR_TOOL_TYPES:
+                            tool_type = tool_obj["type"]
+                            # Build args dict from tool_obj, excluding 'type'
+                            cal_args = {
+                                k: v
+                                for k, v in tool_obj.items()
+                                if k != "type" and v is not None
+                            }
+                            print(f"Calendar tool: {tool_type} with args: {cal_args}")
+
+                            try:
+                                cal_result = google_calendar_tools.run_tool(
+                                    tool_type, cal_args
+                                )
+                                result_str = json.dumps(cal_result, default=str)
+                            except Exception as e:
+                                result_str = json.dumps({"error": str(e)})
+                                print(f"Calendar tool error: {e}")
+
+                            self.add_to_context(
+                                f"calendar tool: {tool_type}\n"
+                                f"args: {json.dumps(cal_args)}\n\n"
+                                f"result: {result_str}",
+                                role="tool",
+                            )
+                            print(f"Calendar result: {result_str[:500]}")
+                            break
 
                         tool_called = True
                         self.reply["tool"] = tool_obj

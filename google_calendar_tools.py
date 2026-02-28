@@ -36,7 +36,9 @@ def _get_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file("local_data/credentials.json", SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(
+                "local_data/credentials.json", SCOPES
+            )
             creds = flow.run_local_server(port=0)
         with open("token.pickle", "wb") as f:
             pickle.dump(creds, f)
@@ -46,6 +48,7 @@ def _get_service():
 
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
+
 
 def _parse_dt(raw: str) -> datetime:
     """Parse a dateTime or date string from the API."""
@@ -69,16 +72,16 @@ def _format_event(event: dict) -> dict:
         "meet_link": event.get("hangoutLink", ""),
         "status": event.get("status", ""),
         "calendar": event.get("_cal", "primary"),
-        "attendees": [
-            a["email"] for a in event.get("attendees", [])
-        ],
+        "attendees": [a["email"] for a in event.get("attendees", [])],
         "html_link": event.get("htmlLink", ""),
     }
 
     if not is_allday:
         s, e = _parse_dt(start_raw), _parse_dt(end_raw)
         out["duration_min"] = int((e - s).total_seconds() / 60)
-        out["time_display"] = f"{s.strftime('%I:%M %p')} – {e.strftime('%I:%M %p')}"
+        out["time_display"] = (
+            f"{s.strftime('%I:%M %p')} – {e.strftime('%I:%M %p')}"
+        )
     else:
         out["duration_min"] = None
         out["time_display"] = "All Day"
@@ -94,215 +97,166 @@ def _utc_iso(dt: datetime) -> str:
     return dt.isoformat() + "Z"
 
 
-# ─── TOOL 1: GET EVENTS ─────────────────────────────────────────────────────
-
-def get_events(
-    start_date: str = None,
-    end_date: str = None,
-    days: int = 7,
-    max_results: int = 50,
-    calendar_id: str = "primary",
-) -> list[dict]:
+def _resolve_date(date: str = None) -> datetime:
     """
-    Get events in a date range.
+    Resolve a date string (YYYY-MM-DD, 'today', 'tomorrow') into a datetime
+    at midnight. Defaults to today if None.
+    """
+    if date is None:
+        return datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    lower = date.strip().lower()
+    now = datetime.now()
+
+    if lower == "today":
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif lower == "tomorrow":
+        return (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+    else:
+        return datetime.fromisoformat(date).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
+
+# ─── TOOL: GET EVENT ────────────────────────────────────────────────────────
+
+
+def get_event(date: str = None) -> list[dict]:
+    """
+    Get events for a given date.
 
     Args:
-        start_date: ISO date string (default: now)
-        end_date:   ISO date string (default: start + days)
-        days:       fallback range if end_date not given
-        max_results: max events to return
-        calendar_id: which calendar
+        date: Date string (YYYY-MM-DD), 'today', 'tomorrow', or None for today.
 
-    Returns: list of event dicts
+    Returns: list of event dicts for that day.
     """
     svc = _get_service()
-    start = datetime.fromisoformat(start_date) if start_date else datetime.utcnow()
-    end = datetime.fromisoformat(end_date) if end_date else start + timedelta(days=days)
+    day_start = _resolve_date(date)
+    day_end = day_start + timedelta(days=1)
 
-    result = svc.events().list(
-        calendarId=calendar_id,
-        timeMin=_utc_iso(start),
-        timeMax=_utc_iso(end),
-        maxResults=max_results,
-        singleEvents=True,
-        orderBy="startTime",
-    ).execute()
+    result = (
+        svc.events()
+        .list(
+            calendarId="primary",
+            timeMin=_utc_iso(day_start),
+            timeMax=_utc_iso(day_end),
+            maxResults=50,
+            singleEvents=True,
+            orderBy="startTime",
+        )
+        .execute()
+    )
 
     return [_format_event(e) for e in result.get("items", [])]
 
 
-# ─── TOOL 2: GET TODAY / THIS WEEK ──────────────────────────────────────────
-
-def get_todays_events() -> list[dict]:
-    """Get all events for today."""
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    return get_events(start_date=_dt_iso(today), days=1)
+# ─── TOOL: SEARCH EVENT ─────────────────────────────────────────────────────
 
 
-def get_this_weeks_events() -> list[dict]:
-    """Get all events for the current week (Mon–Sun)."""
-    today = datetime.now()
-    monday = today - timedelta(days=today.weekday())
-    monday = monday.replace(hour=0, minute=0, second=0, microsecond=0)
-    return get_events(start_date=_dt_iso(monday), days=7)
-
-
-# ─── TOOL 3: SEARCH EVENTS ──────────────────────────────────────────────────
-
-def search_events(query: str, days: int = 30) -> list[dict]:
+def search_event(query: str, days: int = 30) -> list[dict]:
     """
     Full-text search across event titles, descriptions, locations.
 
     Args:
         query: search text
-        days:  how far ahead to look
+        days:  how far ahead to look (default 30)
 
     Returns: matching events
     """
     svc = _get_service()
     now = datetime.utcnow()
 
-    result = svc.events().list(
-        calendarId="primary",
-        timeMin=_utc_iso(now),
-        timeMax=_utc_iso(now + timedelta(days=days)),
-        q=query,
-        singleEvents=True,
-        orderBy="startTime",
-    ).execute()
+    result = (
+        svc.events()
+        .list(
+            calendarId="primary",
+            timeMin=_utc_iso(now),
+            timeMax=_utc_iso(now + timedelta(days=days)),
+            q=query,
+            singleEvents=True,
+            orderBy="startTime",
+        )
+        .execute()
+    )
 
     return [_format_event(e) for e in result.get("items", [])]
 
 
-# ─── TOOL 4: CREATE EVENT ───────────────────────────────────────────────────
+# ─── TOOL: CREATE EVENT ─────────────────────────────────────────────────────
+
 
 def create_event(
     title: str,
-    start: str,
-    end: str = None,
-    duration_min: int = 60,
-    description: str = "",
-    location: str = "",
-    attendees: list[str] = None,
-    all_day: bool = False,
-    recurrence: str = None,
-    add_meet: bool = False,
-    reminder_minutes: list[int] = None,
-    color_id: str = None,
+    date: str,
+    time: str = None,
 ) -> dict:
     """
     Create a calendar event.
 
     Args:
-        title:        event name
-        start:        ISO datetime or date string
-        end:          ISO datetime or date (auto-calculated from duration if omitted)
-        duration_min: used if end is omitted (default 60)
-        description:  event body
-        location:     address or room name
-        attendees:    list of email addresses
-        all_day:      if True, start/end are dates like "2025-07-15"
-        recurrence:   RRULE string e.g. "RRULE:FREQ=WEEKLY;COUNT=10;BYDAY=MO"
-        add_meet:     auto-create a Google Meet link
-        reminder_minutes: list of reminder times e.g. [30, 1440]
-        color_id:     Google Calendar color ID (1-11)
+        title: Title / name of the event.
+        date:  Date of the event (YYYY-MM-DD). Also accepts 'today' / 'tomorrow'.
+        time:  Time of the event (HH:MM, 24-hour). If None, creates an all-day event.
 
     Returns: created event dict
     """
     svc = _get_service()
+    day = _resolve_date(date)
 
-    if all_day:
+    if time is None:
+        # All-day event
+        date_str = day.strftime("%Y-%m-%d")
         event_body = {
-            "start": {"date": start},
-            "end": {"date": end or start},
+            "summary": title,
+            "start": {"date": date_str},
+            "end": {"date": date_str},
         }
     else:
-        start_dt = datetime.fromisoformat(start)
-        if end:
-            end_str = end
-        else:
-            end_str = _dt_iso(start_dt + timedelta(minutes=duration_min))
+        # Timed event — default 60 min duration
+        parts = time.strip().split(":")
+        hour, minute = int(parts[0]), int(parts[1])
+        start_dt = day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        end_dt = start_dt + timedelta(minutes=60)
 
         event_body = {
-            "start": {"dateTime": start, "timeZone": TIMEZONE},
-            "end": {"dateTime": end_str, "timeZone": TIMEZONE},
+            "summary": title,
+            "start": {"dateTime": _dt_iso(start_dt), "timeZone": TIMEZONE},
+            "end": {"dateTime": _dt_iso(end_dt), "timeZone": TIMEZONE},
         }
 
-    event_body["summary"] = title
-    if description:
-        event_body["description"] = description
-    if location:
-        event_body["location"] = location
-    if attendees:
-        event_body["attendees"] = [{"email": e} for e in attendees]
-    if recurrence:
-        event_body["recurrence"] = [recurrence]
-    if color_id:
-        event_body["colorId"] = color_id
-    if reminder_minutes:
-        event_body["reminders"] = {
-            "useDefault": False,
-            "overrides": [{"method": "popup", "minutes": m} for m in reminder_minutes],
-        }
-    if add_meet:
-        event_body["conferenceData"] = {
-            "createRequest": {
-                "requestId": f"ai-{datetime.now().timestamp()}",
-                "conferenceSolutionKey": {"type": "hangoutsMeet"},
-            }
-        }
-
-    created = svc.events().insert(
-        calendarId="primary",
-        body=event_body,
-        conferenceDataVersion=1 if add_meet else 0,
-        sendUpdates="all" if attendees else "none",
-    ).execute()
+    created = (
+        svc.events()
+        .insert(
+            calendarId="primary",
+            body=event_body,
+            conferenceDataVersion=0,
+            sendUpdates="none",
+        )
+        .execute()
+    )
 
     return _format_event(created)
 
 
-# ─── TOOL 5: QUICK ADD (NATURAL LANGUAGE) ───────────────────────────────────
+# ─── TOOL: UPDATE EVENT ─────────────────────────────────────────────────────
 
-def quick_add(text: str) -> dict:
-    """
-    Create event from natural language like Google's Quick Add.
-    e.g. "Lunch with Sarah tomorrow at noon at Olive Garden"
-
-    Args:
-        text: natural language event description
-
-    Returns: created event dict
-    """
-    svc = _get_service()
-    created = svc.events().quickAdd(calendarId="primary", text=text).execute()
-    return _format_event(created)
-
-
-# ─── TOOL 6: UPDATE EVENT ───────────────────────────────────────────────────
 
 def update_event(
     event_id: str,
     title: str = None,
-    start: str = None,
-    end: str = None,
-    description: str = None,
-    location: str = None,
-    color_id: str = None,
-    add_attendees: list[str] = None,
+    date: str = None,
+    time: str = None,
 ) -> dict:
     """
     Update fields on an existing event. Only provided fields are changed.
 
     Args:
-        event_id:       the event to update
-        title:          new title
-        start:          new start dateTime
-        end:            new end dateTime
-        description:    new description
-        location:       new location
-        color_id:       new color (1-11)
-        add_attendees:  emails to add (keeps existing)
+        event_id: The event to update.
+        title:    New title.
+        date:     New date (YYYY-MM-DD). Also accepts 'today' / 'tomorrow'.
+        time:     New time (HH:MM, 24-hour).
 
     Returns: updated event dict
     """
@@ -311,32 +265,88 @@ def update_event(
 
     if title is not None:
         event["summary"] = title
-    if start is not None:
-        event["start"] = {"dateTime": start, "timeZone": TIMEZONE}
-    if end is not None:
-        event["end"] = {"dateTime": end, "timeZone": TIMEZONE}
-    if description is not None:
-        event["description"] = description
-    if location is not None:
-        event["location"] = location
-    if color_id is not None:
-        event["colorId"] = color_id
-    if add_attendees:
-        existing = event.get("attendees", [])
-        existing_emails = {a["email"] for a in existing}
-        for email in add_attendees:
-            if email not in existing_emails:
-                existing.append({"email": email})
-        event["attendees"] = existing
 
-    updated = svc.events().update(
-        calendarId="primary", eventId=event_id, body=event, sendUpdates="all"
-    ).execute()
+    # If date or time is provided, rebuild start/end
+    if date is not None or time is not None:
+        # Resolve the base date
+        if date is not None:
+            new_day = _resolve_date(date)
+        else:
+            # Keep existing date
+            existing_start = event["start"].get(
+                "dateTime", event["start"].get("date", "")
+            )
+            new_day = _parse_dt(existing_start).replace(tzinfo=None)
+            new_day = new_day.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if time is not None:
+            parts = time.strip().split(":")
+            hour, minute = int(parts[0]), int(parts[1])
+            start_dt = new_day.replace(
+                hour=hour, minute=minute, second=0, microsecond=0
+            )
+
+            # Preserve original duration if possible
+            old_start_raw = event["start"].get("dateTime")
+            old_end_raw = event["end"].get("dateTime")
+            if old_start_raw and old_end_raw:
+                old_s = _parse_dt(old_start_raw).replace(tzinfo=None)
+                old_e = _parse_dt(old_end_raw).replace(tzinfo=None)
+                duration = old_e - old_s
+            else:
+                duration = timedelta(minutes=60)
+
+            end_dt = start_dt + duration
+
+            event["start"] = {"dateTime": _dt_iso(start_dt), "timeZone": TIMEZONE}
+            event["end"] = {"dateTime": _dt_iso(end_dt), "timeZone": TIMEZONE}
+        else:
+            # Date changed but no time — keep existing time if timed, else all-day
+            old_start_raw = event["start"].get("dateTime")
+            if old_start_raw:
+                old_s = _parse_dt(old_start_raw).replace(tzinfo=None)
+                old_e = _parse_dt(
+                    event["end"].get("dateTime", old_start_raw)
+                ).replace(tzinfo=None)
+                duration = old_e - old_s
+
+                start_dt = new_day.replace(
+                    hour=old_s.hour,
+                    minute=old_s.minute,
+                    second=0,
+                    microsecond=0,
+                )
+                end_dt = start_dt + duration
+
+                event["start"] = {
+                    "dateTime": _dt_iso(start_dt),
+                    "timeZone": TIMEZONE,
+                }
+                event["end"] = {
+                    "dateTime": _dt_iso(end_dt),
+                    "timeZone": TIMEZONE,
+                }
+            else:
+                date_str = new_day.strftime("%Y-%m-%d")
+                event["start"] = {"date": date_str}
+                event["end"] = {"date": date_str}
+
+    updated = (
+        svc.events()
+        .update(
+            calendarId="primary",
+            eventId=event_id,
+            body=event,
+            sendUpdates="all",
+        )
+        .execute()
+    )
 
     return _format_event(updated)
 
 
-# ─── TOOL 7: DELETE EVENT ───────────────────────────────────────────────────
+# ─── TOOL: DELETE EVENT ──────────────────────────────────────────────────────
+
 
 def delete_event(event_id: str) -> dict:
     """
@@ -352,37 +362,40 @@ def delete_event(event_id: str) -> dict:
     return {"deleted": True, "event_id": event_id}
 
 
-# ─── TOOL 8: FIND FREE SLOTS ────────────────────────────────────────────────
+# ─── TOOL: FIND FREE SLOT ───────────────────────────────────────────────────
 
-def find_free_slots(
-    date: str = None,
-    duration_min: int = 30,
-    attendees: list[str] = None,
+
+def find_free_slot(
+    date: str,
+    duration: int,
 ) -> list[dict]:
     """
     Find available time slots on a given day.
 
     Args:
-        date:         ISO date like "2025-07-15" (default: today)
-        duration_min: minimum slot length in minutes
-        attendees:    also check these people's availability
+        date:     Date to find free slots (YYYY-MM-DD).
+        duration: Minimum slot length in minutes.
 
     Returns: list of {start, end, duration_min}
     """
     svc = _get_service()
-    target = datetime.fromisoformat(date) if date else datetime.now()
+    target = _resolve_date(date)
     day_start = target.replace(hour=WORK_START, minute=0, second=0, microsecond=0)
     day_end = target.replace(hour=WORK_END, minute=0, second=0, microsecond=0)
 
     items = [{"id": "primary"}]
-    if attendees:
-        items.extend({"id": e} for e in attendees)
 
-    fb = svc.freebusy().query(body={
-        "timeMin": _utc_iso(day_start),
-        "timeMax": _utc_iso(day_end),
-        "items": items,
-    }).execute()
+    fb = (
+        svc.freebusy()
+        .query(
+            body={
+                "timeMin": _utc_iso(day_start),
+                "timeMax": _utc_iso(day_end),
+                "items": items,
+            }
+        )
+        .execute()
+    )
 
     # merge all busy periods
     busy = []
@@ -405,118 +418,45 @@ def find_free_slots(
     current = day_start
     for bs, be in merged:
         gap = int((bs - current).total_seconds() / 60)
-        if gap >= duration_min:
-            slots.append({
-                "start": _dt_iso(current),
-                "end": _dt_iso(bs),
-                "duration_min": gap,
-            })
+        if gap >= duration:
+            slots.append(
+                {
+                    "start": _dt_iso(current),
+                    "end": _dt_iso(bs),
+                    "duration_min": gap,
+                }
+            )
         current = max(current, be)
 
     gap = int((day_end - current).total_seconds() / 60)
-    if gap >= duration_min:
-        slots.append({
-            "start": _dt_iso(current),
-            "end": _dt_iso(day_end),
-            "duration_min": gap,
-        })
+    if gap >= duration:
+        slots.append(
+            {
+                "start": _dt_iso(current),
+                "end": _dt_iso(day_end),
+                "duration_min": gap,
+            }
+        )
 
     return slots
 
 
-# ─── TOOL 9: AUTO-SCHEDULE ──────────────────────────────────────────────────
-
-def auto_schedule(
-    title: str,
-    duration_min: int = 60,
-    attendees: list[str] = None,
-    description: str = "",
-    earliest: str = None,
-    search_days: int = 5,
-) -> dict:
-    """
-    Automatically find the next free slot and book a meeting.
-
-    Args:
-        title:        meeting name
-        duration_min: how long
-        attendees:    emails to include
-        description:  event body
-        earliest:     ISO datetime, don't schedule before this
-        search_days:  how many business days to search
-
-    Returns: created event dict or error
-    """
-    start_dt = datetime.fromisoformat(earliest) if earliest else datetime.now() + timedelta(hours=1)
-
-    for offset in range(search_days * 2):  # extra range to skip weekends
-        check = start_dt + timedelta(days=offset)
-        if check.weekday() >= 5:
-            continue
-
-        date_str = check.strftime("%Y-%m-%d")
-        slots = find_free_slots(date=date_str, duration_min=duration_min, attendees=attendees)
-
-        for slot in slots:
-            slot_start = datetime.fromisoformat(slot["start"])
-            if slot_start < start_dt and offset == 0:
-                # on the first day, skip slots before earliest
-                slot_start = start_dt.replace(
-                    minute=(start_dt.minute // 15 + 1) * 15 % 60, second=0, microsecond=0
-                )
-                if int((datetime.fromisoformat(slot["end"]) - slot_start).total_seconds() / 60) < duration_min:
-                    continue
-
-            return create_event(
-                title=title,
-                start=_dt_iso(slot_start),
-                duration_min=duration_min,
-                attendees=attendees,
-                description=description,
-                add_meet=True,
-            )
-
-    return {"error": f"No {duration_min}min slot found in the next {search_days} business days"}
+# ─── TOOL: DAILY SUMMARY ────────────────────────────────────────────────────
 
 
-# ─── TOOL 10: LIST CALENDARS ────────────────────────────────────────────────
-
-def list_calendars() -> list[dict]:
-    """
-    List all calendars the user can access.
-
-    Returns: list of {id, name, access_role, primary, color}
-    """
-    svc = _get_service()
-    cals = svc.calendarList().list().execute().get("items", [])
-    return [
-        {
-            "id": c["id"],
-            "name": c["summary"],
-            "access_role": c.get("accessRole", ""),
-            "primary": c.get("primary", False),
-            "color": c.get("backgroundColor", ""),
-        }
-        for c in cals
-    ]
-
-
-# ─── TOOL 11: DAILY SUMMARY ─────────────────────────────────────────────────
-
-def daily_summary(date: str = None) -> dict:
+def daily_summary(date: str) -> dict:
     """
     Generate a summary/report for a given day.
 
     Args:
-        date: ISO date (default: today)
+        date: Date for the summary (YYYY-MM-DD).
 
-    Returns: {date, event_count, total_meeting_min, free_min, events}
+    Returns: {date, day_name, event_count, total_meeting_min, free_min, busiest_block, events}
     """
-    target = datetime.fromisoformat(date) if date else datetime.now()
+    target = _resolve_date(date)
     day_str = target.strftime("%Y-%m-%d")
-    day_start = target.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    events = get_events(start_date=_dt_iso(day_start), days=1)
+    events = get_event(date=day_str)
     total_min = sum(e["duration_min"] or 0 for e in events)
     work_min = (WORK_END - WORK_START) * 60
 
@@ -526,64 +466,85 @@ def daily_summary(date: str = None) -> dict:
         "event_count": len(events),
         "total_meeting_min": total_min,
         "free_min": max(0, work_min - total_min),
-        "busiest_block": max(events, key=lambda e: e["duration_min"] or 0)["title"] if events else None,
+        "busiest_block": (
+            max(events, key=lambda e: e["duration_min"] or 0)["title"]
+            if events
+            else None
+        ),
         "events": events,
     }
 
 
-# ─── TOOL REGISTRY (for AI frameworks) ──────────────────────────────────────
+# ─── DISPATCHER (for agent integration) ─────────────────────────────────────
 
-TOOLS = {
-    "get_events": get_events,
-    "get_todays_events": get_todays_events,
-    "get_this_weeks_events": get_this_weeks_events,
-    "search_events": search_events,
-    "create_event": create_event,
-    "quick_add": quick_add,
-    "update_event": update_event,
-    "delete_event": delete_event,
-    "find_free_slots": find_free_slots,
-    "auto_schedule": auto_schedule,
-    "list_calendars": list_calendars,
-    "daily_summary": daily_summary,
+TOOL_MAP = {
+    "getEvent": lambda args: get_event(date=args.get("date")),
+    "searchEvent": lambda args: search_event(query=args["query"]),
+    "createEvent": lambda args: create_event(
+        title=args["title"],
+        date=args["date"],
+        time=args.get("time"),
+    ),
+    "updateEvent": lambda args: update_event(
+        event_id=args["event_id"],
+        title=args.get("title"),
+        date=args.get("date"),
+        time=args.get("time"),
+    ),
+    "deleteEvent": lambda args: delete_event(event_id=args["event_id"]),
+    "findFreeSlot": lambda args: find_free_slot(
+        date=args["date"],
+        duration=args["duration"],
+    ),
+    "dailySummary": lambda args: daily_summary(date=args["date"]),
 }
 
 
-def run_tool(name: str, **kwargs):
-    """Generic dispatcher — call any tool by name with kwargs."""
-    if name not in TOOLS:
-        return {"error": f"Unknown tool '{name}'. Available: {list(TOOLS.keys())}"}
-    try:
-        return TOOLS[name](**kwargs)
-    except Exception as e:
-        return {"error": str(e)}
+def run_tool(tool_type: str, args: dict):
+    """
+    Dispatch a tool call by its schema type name.
+
+    Args:
+        tool_type: one of the keys in TOOL_MAP
+        args:      dict of arguments matching the schema
+
+    Returns: tool result (dict or list)
+    """
+    handler = TOOL_MAP.get(tool_type)
+    if handler is None:
+        return {"error": f"Unknown tool type: {tool_type}"}
+    return handler(args)
 
 
 # ─── DEMO / CLI ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    import json
+    _get_service()  # trigger auth flow
 
-    def pp(data):
-        print(json.dumps(data, indent=2, default=str))
+    print("Today's events:")
+    for e in get_event():
+        print(f"  - {e['title']} at {e['time_display']}")
 
-    print("\n── Today's Events ──")
-    pp(run_tool("get_todays_events"))
+    print("\nSearch for 'lunch':")
+    for e in search_event("lunch"):
+        print(f"  - {e['title']} on {e['start'][:10]} at {e['time_display']}")
 
-    print("\n── This Week ──")
-    pp(run_tool("get_this_weeks_events"))
+    print("\nCreating a test event...")
+    new_event = create_event(
+        title="Test Meeting",
+        date="today",
+        time="14:00",
+    )
+    print(
+        f"  Created: {new_event['title']} at {new_event['time_display']}"
+    )
 
-    print("\n── Free Slots Today ──")
-    pp(run_tool("find_free_slots", duration_min=30))
+    print("\nFree slots today (30 min):")
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    for slot in find_free_slot(date=today_str, duration=30):
+        print(f"  - {slot['start']} → {slot['end']} ({slot['duration_min']}min)")
 
-    print("\n── Daily Summary ──")
-    pp(run_tool("daily_summary"))
-
-    print("\n── All Calendars ──")
-    pp(run_tool("list_calendars"))
-
-    # Uncomment to test write operations:
-    # pp(run_tool("quick_add", text="Coffee with Alex Friday 2pm"))
-    # pp(run_tool("create_event", title="Test", start="2025-07-15T10:00:00", duration_min=30))
-    # pp(run_tool("search_events", query="standup"))
-    # pp(run_tool("auto_schedule", title="1:1 Sync", duration_min=30))
+    print("\nDaily summary:")
+    summary = daily_summary(date=today_str)
+    print(f"  {summary['day_name']}: {summary['event_count']} events, "
+          f"{summary['free_min']}min free")
