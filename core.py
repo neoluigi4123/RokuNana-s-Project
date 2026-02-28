@@ -482,7 +482,7 @@ class LLM:
                             if mode == "web":
                                 web_result = tools.web(query)
                                 self.add_to_context(
-                                    f"query: {query}\n\n{web_result}",
+                                    f"query: {query}\n\nResults: {web_result}",
                                     role="tool",
                                 )
                                 break
@@ -490,7 +490,7 @@ class LLM:
                             elif mode == "youtube":
                                 youtube_link = tools.youtube(query)
                                 self.add_to_context(
-                                    f"query: {query}\n\n{youtube_link}",
+                                    f"query: {query}\n\nLink found:{youtube_link}",
                                     role="tool",
                                 )
                                 break
