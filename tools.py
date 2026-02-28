@@ -75,17 +75,14 @@ def gif(query: str) -> str:
         if response.status_code == 200:
             data = response.json()
             if data["data"]:
-                print("Success: Here is a GIF URL:")
-                print(data["data"][0]["images"]["original"]["url"])
                 return data["data"][0]["images"]["original"]["url"]
             else:
-                print("No GIFs found for the query.")
+                return("No GIFs found for the query.")
         else:
-            print(f"Error: Received status code {response.status_code} from Giphy API.")
-            print(response.text
+            return(f"Error: Received status code {response.status_code} from Giphy API.")
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        return(f"An error occurred: {e}")
 
 def youtube(query: str) -> str:
     """
