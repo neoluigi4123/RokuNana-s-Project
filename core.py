@@ -637,4 +637,4 @@ if __name__ == "__main__":
     print(r)
 
     # Transcription test
-    print(f"Audio Transcription:\n{AI.transcribe_audio(audio_path="output.mp3")}")
+    print(f"Audio Transcription:\n{AI.transcribe_audio(audio_path='output.mp3')}")
