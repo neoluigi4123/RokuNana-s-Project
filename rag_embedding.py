@@ -25,7 +25,7 @@ def read_memory(n, query=""):
 
 def write_memory(content):
     with open("data.csv", "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["user", "content"])
+        writer = csv.DictWriter(f, fieldnames=["content"])
         if f.tell() == 0: writer.writeheader()
         writer.writerow({"content": content})
 
