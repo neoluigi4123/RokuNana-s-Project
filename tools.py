@@ -49,7 +49,7 @@ def web(query: str, num_results: int = 5) -> str:
 
 def gif(query: str) -> str:
     """
-    Searches for a GIF on Tenor and returns a random URL from the first 5 results.
+    Searches for a GIF on Giphy and returns a random URL from the first 5 results.
     
     Args:
         query (str): The search query for the GIF.
@@ -58,7 +58,7 @@ def gif(query: str) -> str:
         str: URL of a random GIF from the search results or an error message.
     """
     API_KEY = config.GIF_TOKEN
-    url = "https://tenor.googleapis.com/v2/search"
+    url = "https://api.giphy.com"
     
     params = {
         "q": query,
