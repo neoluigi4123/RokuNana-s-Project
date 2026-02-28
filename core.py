@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, model_validator, create_model
 
 import tools
 import config
+import google_calendar_tools
 
 # - - - Tools - - -
 
@@ -37,10 +38,51 @@ class Attachments(BaseModel):
     type: Literal["attachments"] = "attachments"
     path: str = Field(..., description="Path to the attachment file")
 
+class GetEvent(BaseModel):
+    """Get an event from the calendar | requires 'feedback'"""
+    type: Literal["getEvent"] = "getEvent"
+    date: Optional[str] = Field(None, description="Date for which to get events (YYYY-MM-DD). Leave empty to use today's date.")
+
+class SearchEvent(BaseModel):
+    """Search events in the calendar | requires 'feedback'"""
+    type: Literal["searchEvent"] = "searchEvent"
+    query: str = Field(..., description="Query to search events")
+
+class CreateEvent(BaseModel):
+    """Create a calendar event | requires 'feedback'"""
+    type: Literal["createEvent"] = "createEvent"
+    title: str = Field(..., description="Title of the event")
+    date: str = Field(..., description="Date of the event (YYYY-MM-DD). You can use natural language like 'today' or 'tomorrow'.")
+    time: Optional[str] = Field(None, description="Time of the event (HH:MM)")
+
+class UpdateEvent(BaseModel):
+    """Update a calendar event | requires 'feedback'"""
+    type: Literal["updateEvent"] = "updateEvent"
+    event_id: str = Field(..., description="ID of the event to update")
+    title: Optional[str] = Field(None, description="New title of the event")
+    date: Optional[str] = Field(None, description="New date of the event (YYYY-MM-DD)")
+    time: Optional[str] = Field(None, description="New time of the event (HH:MM)")
+
+class DeleteEvent(BaseModel):
+    """Delete a calendar event | requires 'feedback'"""
+    type: Literal["deleteEvent"] = "deleteEvent"
+    event_id: str = Field(..., description="ID of the event to delete")
+
+class FindFreeSlot(BaseModel):
+    """Find a free time slot in the calendar | requires 'feedback'"""
+    type: Literal["findFreeSlot"] = "findFreeSlot"
+    date: str = Field(..., description="Date to find free slots (YYYY-MM-DD)")
+    duration: int = Field(..., description="Duration of the free slot in minutes")
+
+class DailySummary(BaseModel):
+    """Get a daily summary of events | requires 'feedback'"""
+    type: Literal["dailySummary"] = "dailySummary"
+    date: str = Field(..., description="Date for the summary (YYYY-MM-DD)")
+
 # - - - MPC - - -
 
 ToolUnion = Annotated[
-    Union[Web, PythonExecution, VoiceMessageGeneration, Attachments],
+    Union[Web, PythonExecution, VoiceMessageGeneration, Attachments, GetEvent, SearchEvent, UpdateEvent, DeleteEvent, FindFreeSlot, DailySummary],
     Field(discriminator='type')
 ]
 

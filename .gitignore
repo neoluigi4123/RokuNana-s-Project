@@ -2,3 +2,7 @@ __pycache__/
 .venv/
 .env
 local_data/
+crendentials.json
+token.pickle
+context.json
+chat_summary.txt
