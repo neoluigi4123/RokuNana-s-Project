@@ -14,18 +14,59 @@ Allowing LLMs to do Multi-Party chat (with multiple users)
     ```
 4. Set up Google Calendar API credentials:
    - Go to the [Google Cloud Console](https://console.cloud.google.com/).
-    - Create a new project and enable the Google Calendar API.
-      <img width="412" height="138" alt="image" src="https://github.com/user-attachments/assets/4b4a764d-502c-45ba-ae28-ba3739625726" />
+     
+    - Create a new project.
+      
+![bandicam 2026-02-28 16-07-50-247](https://github.com/user-attachments/assets/e7ea54ec-0807-42a4-bc0c-102d6bca3774)
+![bandicam 2026-02-28 16-08-16-024](https://github.com/user-attachments/assets/4901f39d-b317-4db0-877f-cbc45b3daf3a)
+![bandicam 2026-02-28 16-08-21-926](https://github.com/user-attachments/assets/7e844676-af36-41a8-934b-e1d4b769970e)
 
-    - Create OAuth 2.0 credentials and download the `credentials.json` file.
-      <img width="464" height="915" alt="image" src="https://github.com/user-attachments/assets/dd86d097-e75d-43b8-b649-20e12698738a" />
-      <img width="934" height="404" alt="image" src="https://github.com/user-attachments/assets/93f90f57-5ab3-4c86-8c7f-f86b2882c877" />
-      <img width="892" height="331" alt="image" src="https://github.com/user-attachments/assets/dcb640d2-8921-4fcc-856f-1044c85479a8" />
-      <img width="801" height="531" alt="image" src="https://github.com/user-attachments/assets/89642eaf-c98b-4369-a79b-3340e1180cf3" />
-      <img width="487" height="584" alt="image" src="https://github.com/user-attachments/assets/5917da76-19f8-4f14-a075-2097752d6cd3" />
+   -When your project is created, configure Google Auth Platform.
 
-    - Place the `credentials.json` file in the `local_data/` directory (create it if not existing yet).
-5. Run the main application:
+![bandicam 2026-02-28 16-08-46-175](https://github.com/user-attachments/assets/a0b21674-c9d6-42a7-8216-0ba4d87e77c8)
+![bandicam 2026-02-28 16-08-58-436](https://github.com/user-attachments/assets/397f2b54-6750-4dc5-a323-a21c94ca9ba2)
+![bandicam 2026-02-28 16-09-01-417](https://github.com/user-attachments/assets/e5c4d3a1-bd33-4197-901c-05a4ea988abb)
+![bandicam 2026-02-28 16-09-10-551](https://github.com/user-attachments/assets/6e20cc8a-7c88-4b4a-884c-711984c83aff)
+![bandicam 2026-02-28 16-09-12-929](https://github.com/user-attachments/assets/7549c709-4561-4cac-a4e2-4e1e5e434cfa)
+![bandicam 2026-02-28 16-09-14-619](https://github.com/user-attachments/assets/068cd856-5a80-474a-98e8-b8486d8601ee)
+
+   -Then go to Credentials under APIs & Services
+   
+![bandicam 2026-02-28 16-10-04-119](https://github.com/user-attachments/assets/4132c572-6d8f-423f-9770-3b1587a5755c)
+
+   -Create an OAuth cliend ID
+   
+![bandicam 2026-02-28 16-10-13-932](https://github.com/user-attachments/assets/de82c641-9fd2-4d8c-a6bb-895a4b55dd34)
+![bandicam 2026-02-28 16-10-25-021](https://github.com/user-attachments/assets/e050647f-fa73-412e-bf23-966b7dec3ec0)
+
+   -Download the JSON file
+   
+![bandicam 2026-02-28 16-10-31-094](https://github.com/user-attachments/assets/1ce8a3cb-822f-431b-b7a9-32d2f338090b)
+
+   -Rename the file to "credentials.json"
+   
+![bandicam 2026-02-28 16-11-16-285](https://github.com/user-attachments/assets/35d3816a-c3f3-4e15-9bed-8cc2585cda11)
+
+   -Put the credentials.json file in the "local_data" folder in the root of RokuNana-s-Project or create it if not existing
+
+   -Return to the [Google Cloud Console](https://console.cloud.google.com/).
+
+   -Go to View all products and search for google calendar API in the top search bar.
+![bandicam 2026-02-28 16-11-45-470](https://github.com/user-attachments/assets/a66aa001-29d6-427b-bdad-9170667f25f8)
+![bandicam 2026-02-28 16-12-38-362](https://github.com/user-attachments/assets/d76a6409-f52e-4ad7-9323-ea35a55e53b8)
+   -Enable the Google Calendar API.
+![bandicam 2026-02-28 16-12-46-988](https://github.com/user-attachments/assets/ce8cda89-36df-41e6-862d-f0ce89f6c910)
+
+   -Finally, go to OAuth consent screen under APIs & Services.
+   
+![bandicam 2026-02-28 16-13-21-513](https://github.com/user-attachments/assets/3ca59367-1617-4862-8b65-c10359c71dd4)
+
+   -And add a test user with your e-mail adress.
+   
+![bandicam 2026-02-28 16-13-35-030](https://github.com/user-attachments/assets/8a2ecdd2-12e3-4b64-94d0-f8d67187284c)
+![bandicam 2026-02-28 16-13-46-205](https://github.com/user-attachments/assets/7316d381-4feb-4508-8d9a-4687c9e78393)
+
+6. Run the main application:
     ```bash
     python main.py
     ```
