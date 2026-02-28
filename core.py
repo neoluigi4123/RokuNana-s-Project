@@ -196,7 +196,7 @@ class LLM:
                 file=File(content=f, file_name=f.name),
                 diarize=True,
                 timestamp_granularities=["segment"],
-                context_bias=biases,
+                context_bias=[biases],
             )
             result = ""
             for segment in response.segments: # type: ignore
