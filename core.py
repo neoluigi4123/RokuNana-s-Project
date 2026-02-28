@@ -212,7 +212,7 @@ class LLM:
         self.context.append(message)
 
         try:
-            with open("context.json", "w", encoding="utf-8") as f:
+            with open("local_data/context.json", "w", encoding="utf-8") as f:
                 log_context = copy.deepcopy(self.context)
                 for msg in log_context:
                     if "images" in msg:
@@ -297,7 +297,7 @@ class LLM:
         self.context.extend(new_context)
 
         try:
-            with open("context.json", "w", encoding="utf-8") as f:
+            with open("local_data/context.json", "w", encoding="utf-8") as f:
                 log_context = copy.deepcopy(self.context)
                 for msg in log_context:
                     if "images" in msg:
