@@ -1,5 +1,10 @@
 # RokuNana-s-Project
 Allowing LLMs to do Multi-Party chat (with multiple users)
+# Project presentation
+
+Pipeline chart:
+
+<img width="3219" height="3273" alt="image" src="https://github.com/user-attachments/assets/8d625780-db2a-4f01-950c-97d9bae0df4d" />
 
 # Setup Instructions
 1. Clone the repository and navigate to the project directory.
