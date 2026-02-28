@@ -10,6 +10,7 @@ import requests
 import base64
 from typing import List, Literal, Optional, Union, Type, Annotated
 from pydantic import BaseModel, Field, model_validator, create_model
+from mistralai import Mistral, File
 
 import tools
 import config
@@ -198,9 +199,7 @@ class LLM:
             )
             for segment in response.segments:
                 speaker = segment.speaked_id or "unknown"
-                print(
-                    f"[{segment.start:.1f}s → {segment.end:.1f}s] {speaker}: {segment.text.strip()}"
-                )
+                print(f"[{segment.start:.1f}s → {segment.end:.1f}s] {speaker}: {segment.text.strip()}")
 
     def add_to_context(
         self,
