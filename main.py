@@ -12,10 +12,7 @@ import discord
 import asyncio
 import time
 import os
-import pathlib
-from mistralai import Mistral, File
 from dotenv import load_dotenv
-
 
 from core import LLM
 import config
