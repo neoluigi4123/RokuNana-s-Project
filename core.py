@@ -611,7 +611,7 @@ if __name__ == "__main__":
     r = AI.generate(
         prompt={
             "role": "user",
-            "content": "Hello, can you add an event to my calendar for tomorrow at 3pm called 'Meeting with Bob' and then search the web for 'best pizza places near me' and give me a recommendation?",
+            "content": "Hello, can you add an event to my calendar for tomorrow at dinner time called 'Eating with friends'",
         },
     )
 
