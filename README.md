@@ -90,9 +90,10 @@ Pipeline chart:
 3. Fill in the required information for your application, such as the name and description.
 4. After creating the app, you will be provided with an API key (also known as a token). Copy this API key.
 5. Create a file named `config.py` in the root directory of the project and add the following line, replacing `YOUR_GIPHY_API_KEY` with the API key you copied:
-   ```python   GIPHY_API_KEY = 'YOUR_GIPHY_API_KEY'
+   ```python   
+   GIPHY_API_KEY = 'YOUR_GIPHY_API_KEY'
    ```
-   
+
 6. Run the main application:
     ```bash
     python main.py
