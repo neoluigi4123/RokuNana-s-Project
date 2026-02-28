@@ -9,3 +9,4 @@ trafilatura
 yt-dlp
 ddgs
 elevenlabs
+aiohttp
