@@ -611,7 +611,7 @@ if __name__ == "__main__":
     r = AI.generate(
         prompt={
             "role": "user",
-            "content": "Hello, can you add an event to my calendar for tomorrow at dinner time called 'Eating with friends'",
+            "content": "Send me a voice message saying 'Hello World' and add a calendar event for tomorrow at 3pm with the title 'Meeting with Bob'. Use voice message generation and createEvent tools.",
         },
     )
 

@@ -6,10 +6,10 @@ import requests
 import random
 import yt_dlp
 import trafilatura
+from elevenlabs_module import generate_tts
 
 import config
 import scripting
-#from elevenlabs_module import generate_audio
 
 def web(query: str, num_results: int = 5) -> str:
     """
@@ -151,7 +151,7 @@ def python_execution(script: str, timeout: int = 30) -> str:
 
 def voice_message_generation(input):
     pass
-    #return generate_audio(input)
+    return generate_tts(input)
 
 if __name__ == "__main__":
     # Example usage
