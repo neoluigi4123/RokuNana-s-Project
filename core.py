@@ -21,7 +21,7 @@ class Web(BaseModel):
     """Web search tool | requires 'feedback' sometimes"""
     type: Literal["browsing"] = "browsing"
     query: str = Field(..., description="Search query or URL")
-    mode: Literal["web", "gif", "youtube"] = Field(..., description="Mode of the search")
+    mode: Literal["web", "youtube"] = Field(..., description="Mode of the search")
 
 class PythonExecution(BaseModel):
     """Python code execution tool | requires 'feedback'"""
@@ -68,12 +68,6 @@ class DeleteEvent(BaseModel):
     type: Literal["deleteEvent"] = "deleteEvent"
     event_id: str = Field(..., description="ID of the event to delete")
 
-class FindFreeSlot(BaseModel):
-    """Find a free time slot in the calendar | requires 'feedback'"""
-    type: Literal["findFreeSlot"] = "findFreeSlot"
-    date: str = Field(..., description="Date to find free slots (YYYY-MM-DD)")
-    duration: int = Field(..., description="Duration of the free slot in minutes")
-
 class DailySummary(BaseModel):
     """Get a daily summary of events | requires 'feedback'"""
     type: Literal["dailySummary"] = "dailySummary"
@@ -82,7 +76,7 @@ class DailySummary(BaseModel):
 # - - - MPC - - -
 
 ToolUnion = Annotated[
-    Union[Web, PythonExecution, VoiceMessageGeneration, Attachments, GetEvent, SearchEvent, UpdateEvent, DeleteEvent, FindFreeSlot, DailySummary],
+    Union[Web, PythonExecution, VoiceMessageGeneration, Attachments, GetEvent, SearchEvent, UpdateEvent, DeleteEvent, DailySummary],
     Field(discriminator='type')
 ]
 
@@ -424,7 +418,6 @@ class LLM:
             "createEvent",
             "updateEvent",
             "deleteEvent",
-            "findFreeSlot",
             "dailySummary",
         }
 
@@ -493,14 +486,6 @@ class LLM:
                                     role="tool",
                                 )
                                 break
-
-                            elif mode == "gif":
-                                gif_link = tools.gif(query)
-                                self.reply["message"] = gif_link
-                                self.add_to_context(
-                                    f"query: {query}\n\n{gif_link}",
-                                    role="tool",
-                                )
 
                             elif mode == "youtube":
                                 youtube_link = tools.youtube(query)
