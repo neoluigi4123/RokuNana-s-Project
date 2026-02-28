@@ -79,5 +79,4 @@ def voice_message_generation(input):
 if __name__ == "__main__":
     # Example usage
     print(web("https://en.wikipedia.org/wiki/OpenAI"))
-    print(gif("cute cat"))
     print(youtube("funny dog videos"))
