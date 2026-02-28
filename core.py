@@ -277,7 +277,7 @@ class LLM:
                 max_tokens=1024,
             )
             summary_text = (
-                result["choices"][0]["message"]["content"].strip()
+                result["choices"][0]["message"]["content"].strip() # type: ignore
             )
         except Exception as e:
             print(f"Summarization failed: {e}")
@@ -437,7 +437,7 @@ class LLM:
                     return None
             return None
 
-        for raw_line in response.iter_lines():
+        for raw_line in response.iter_lines(): # type: ignore
             if not raw_line:
                 continue
 
@@ -605,7 +605,7 @@ if __name__ == "__main__":
         model_name="mistral-large-latest",
         client="https://api.mistral.ai",
         system_prompt=config.SYSTEM_PROMPT,
-        api_key=config.MISTRAL_API_KEY,
+        api_key=config.MISTRAL_API_KEY, # type: ignore
     )
 
     r = AI.generate(
