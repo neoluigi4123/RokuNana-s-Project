@@ -197,9 +197,12 @@ class LLM:
                 diarize=True,
                 timestamp_granularities=["segment"],
             )
+            result = ""
             for segment in response.segments: # type: ignore
                 speaker = segment.speaker_id or "unknown"
-                print(f"[{segment.start:.1f}s → {segment.end:.1f}s] {speaker}: {segment.text.strip()}")
+                result += f"\n[{segment.start:.1f}s → {segment.end:.1f}s] {speaker}: {segment.text.strip()}"
+            
+            return result
 
     def add_to_context(
         self,
