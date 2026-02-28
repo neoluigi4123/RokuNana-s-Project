@@ -200,6 +200,6 @@ TIMEZONE = "Europe/Paris"
 DOWNLOAD_PATH = "download" # Where attachments goes (images)
 
 # API Keys (depuis .env, pas depuis variables système)
-MISTRAL_API_KEY = _env_vars.get("MISTRAL_API_KEY")
-DISCORD_BOT_TOKEN = _env_vars.get("DISCORD_BOT_TOKEN")
-ELEVEN_LABS_API_KEY = _env_vars.get("ELEVENLABS_API_KEY")
+MISTRAL_API_KEY = _env_vars.get("MISTRAL_API_KEY", "")
+DISCORD_BOT_TOKEN = _env_vars.get("DISCORD_BOT_TOKEN", "")
+ELEVEN_LABS_API_KEY = _env_vars.get("ELEVENLABS_API_KEY", "")
