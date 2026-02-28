@@ -1,47 +1,152 @@
 """
-Core module where the llm agent is implemented.
+kawaiibaka.py
+KawaiiBaka's brain and main module
 """
-import config
-from mistralai import Mistral
-from typing import Any
-import os
-import json
+
 import copy
+import re
+import json
+import requests
 import base64
+from typing import List, Literal, Optional, Union, Type, Annotated
+from pydantic import BaseModel, Field, model_validator, create_model
+
+import tools
+import config
+
+# - - - Tools - - -
+
+class Web(BaseModel):
+    """Web search tool | requires 'feedback' sometimes"""
+    type: Literal["browsing"] = "browsing"
+    query: str = Field(..., description="Search query or URL")
+    mode: Literal["web", "gif", "youtube"] = Field(..., description="Mode of the search")
+
+class PythonExecution(BaseModel):
+    """Python code execution tool | requires 'feedback'"""
+    type: Literal["pythonExecution"] = "pythonExecution"
+    script: str = Field(..., description="Python script to execute")
+
+class VoiceMessageGeneration(BaseModel):
+    """Voice message generation tool | does NOT require 'feedback'"""
+    type: Literal["voiceMessageGeneration"] = "voiceMessageGeneration"
+    text: str = Field(..., description="Text to convert to voice message")
+
+class Attachments(BaseModel):
+    """Attachment tool | does NOT require 'feedback'"""
+    type: Literal["attachments"] = "attachments"
+    path: str = Field(..., description="Path to the attachment file")
+
+# - - - MPC - - -
+
+ToolUnion = Annotated[
+    Union[Web, PythonExecution, VoiceMessageGeneration, Attachments],
+    Field(discriminator='type')
+]
+
+class User(BaseModel):
+    name: str = Field(..., description="Name of the user")
+    current_emotion: str = Field(..., description="Current emotion of the user")
+    engagement_level: int = Field(..., ge=0, le=100, description="Engagement level (0-100)")
+    act_recognition: str = Field(..., description="Action recognition of the user")
+
+
+class MessageSchema(BaseModel):
+    users: List[User] = Field(..., description="State of users in the conversation (Excluding yourself)")
+
+    summary: str = Field(..., description="Summary of the conversation so far")
+    conversation_disentanglement: int = Field(..., ge=0, le=100, description="How distant the conversation is (0-100)")
+    discourse_structure: str = Field(..., description="Structure of the discourse (narrative, descriptive, Q&A, etc.)")
+
+    # Persona Characteristics
+    social_context: str = Field(..., description="Social context of the conversation")
+    current_mood: str = Field(..., description="Your Current mood")
+    compliance_willingness: int = Field(..., ge=0, le=100, description="Your willingness to comply with requests (0-100)")
+    internal_monologue: str = Field(..., description="Your internal thoughts")
+    proposed_tool: str = Field(..., description="Tools relevant to the current conversation that you propose to use (if any). Just name them, no need to explain how you would use them here.")
+    
+    tool: Optional[ToolUnion] = Field(None, description="Tool to use. Only one tool can be used at a time.")
+    
+    unknown_fact: Optional[str] = Field(None, description="A fact about user that you didn't know until now.")
+    reply: Optional[str] = Field(None, description="Your reply (or ignorance). Leave empty if using a tool that don't require feedback.")
+    target_user: Optional[str] = Field(None, description="The user you're replying to. Must be a single and valid nickname, not the name of the user.")
+
+    @model_validator(mode='after')
+    def validate_reply_logic(self):
+        tool_used = self.tool
+        if tool_used:
+            requires_feedback = isinstance(tool_used, (Web, PythonExecution))
+            if requires_feedback and self.reply is not None:
+                self.reply = ""
+        
+        if self.reply:
+            if not self.target_user:
+                raise ValueError("A 'target_user' is required when a 'reply' is provided.")
+        else:
+            self.target_user = None
+
+        return self
 
 class LLM:
-    def __init__(self, model: str):
-        self.model = model
-        self.client = Mistral()
-        self.context: list[Any] = [
-            {
-                "role": "system",
-                "content": config.SYSTEM_PROMPT,
-            }
-        ]
-    def generate(self, prompt: str):
-        """Generates a response from the LLM based on the given prompt.
-        Args:
-            prompt (str): The input prompt to generate a response for.
-        Returns:
-            str: The generated response from the LLM.
-        """
-        self.add_to_context(prompt)
+    def __init__(
+        self,
+        model_name: str,
+        api_key: str = "",
+        client: str = "https://api.mistral.ai",
+        system_prompt: str = "You are a usefull assistant of the name RokuNana.",
+    ):
+        self.model_name = model_name
+        self.client_url = client.rstrip('/')
+        self.api_key = api_key
         
-        result = None
-        
-        # Loop until we get a result that has text content
-        while not result or not result.content:
-            chat_response = self.client.chat.complete(
-                model = self.model,
-                messages = self.context,
-            )
-            result = chat_response.choices[0].message
-        return result
+        # Generation state tracking
+        self.state = {
+            "tool_usage": {
+                "selfieGeneration": 0,
+                "voiceMessageGeneration": 0,
+            },
+            "thinking": 0,
+            "Replying": 0,
+            "done": 0,
+        }
 
-    def _encode_image(self, image_path: str) -> str:
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+        self.context = []
+        
+        self.tool_mapping = {
+            "web": Web,
+            "pythonExecution": PythonExecution,
+            "voiceMessageGeneration": VoiceMessageGeneration,
+            "attachments": Attachments
+        }
+
+        self.system_prompt = system_prompt
+
+    def _mistral_request(
+        self,
+        messages: list,
+        stream: bool = False,
+        **extra_payload,
+    ) -> Union[requests.Response, dict]:
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+
+        payload = {
+            "model": self.model_name,
+            "messages": messages,
+            "stream": stream,
+            **extra_payload,
+        }
+
+        resp = requests.post(
+            f"{self.client_url}/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            stream=stream,
+        )
+        resp.raise_for_status()
+        return resp if stream else resp.json()
 
     def add_to_context(
         self,
@@ -73,6 +178,42 @@ class LLM:
                 json.dump(log_context, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Error saving context: {e}")
+    
+    def _get_dynamic_schema(self) -> Type[BaseModel]:
+        available_tools = []
+        
+        for tool_name, usage_count in self.state['tool_usage'].items():
+            if usage_count == 0 and tool_name in self.tool_mapping:
+                available_tools.append(self.tool_mapping[tool_name])
+
+        if len(available_tools) > 1:
+            DynamicToolUnion = Annotated[
+                Union[tuple(available_tools)],
+                Field(discriminator='type')
+            ]
+        elif len(available_tools) == 1:
+            DynamicToolUnion = available_tools[0]
+        else:
+            DynamicToolUnion = type(None)
+
+        DynamicSchema = create_model(
+            'DynamicMessageSchema',
+            __base__=MessageSchema,
+            tool=(Optional[DynamicToolUnion], Field(None, description="Tool to use."))
+        )
+        
+        return DynamicSchema
+
+    def _get_object_field(self, key, text):
+        pattern = rf'"{key}"\s*:\s*({{.*?}})'
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            return match.group(1)
+        return None
+
+    def _encode_image(self, image_path: str) -> str:
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
 
     def summarize_chat(self, num: int = 10):
         if len(self.context) <= num:
@@ -94,13 +235,13 @@ class LLM:
         )
 
         try:
-            result = self.client.chat.complete(
-                model = self.model,
-                messages = [{"role": "user", "content": summarization_prompt}],
-                stream=False
+            result = self._mistral_request(
+                messages=[{"role": "user", "content": summarization_prompt}],
+                stream=False,
+                max_tokens=1024,
             )
             summary_text = (
-                result.choices[0].message.content
+                result["choices"][0]["message"]["content"].strip()
             )
         except Exception as e:
             print(f"Summarization failed: {e}")
@@ -123,8 +264,287 @@ class LLM:
         except Exception as e:
             print(f"Error saving context: {e}")
 
+    def generate(
+        self,
+        rag: str | None = None,
+        prompt: dict | None = None,
+    ) -> str:
+        """
+        Generate a structured JSON response via the Mistral chat-completions
+        endpoint (streaming SSE).
+
+        *   ``rag`` is injected as an **assistant prefill** message
+            (``"prefix": true``) so the model continues from that context.
+        *   Tool calls are dispatched inline; tools that require feedback
+            (``Web``, ``PythonExecution``) break out of the stream and
+            expect a subsequent ``generate_response`` call.
+
+        :param rag:    Retrieval-Augmented Generation context string.
+        :param prompt: Optional new user/message dict to append before
+                       generating.
+        :returns:      The raw constructed response string (JSON).
+        """
+
+        # reset generation state
+        self.state['thinking'] = 1
+        self.state['Replying'] = 0
+        self.state['done'] = 0
+
+        self.prev_reply = {}
+        self.reply = {
+            'tool': None,
+            'tar_usr': None,
+            'message': None,
+            'attachments': [],
+            'unknown_fact': None,
+        }
+
+        if prompt:
+            self.add_to_context(
+                prompt['content'],
+                prompt['role'],
+                prompt.get('images'),
+            )
+
+        # build the schema-aware system prompt
+        current_schema_class = self._get_dynamic_schema()
+        schema_json = json.dumps(
+            current_schema_class.model_json_schema(), indent=2
+        )
+
+        system_prompt = (
+            f"{self.system_prompt} You must respond in JSON format "
+            f"following this schema:\n{schema_json}\n"
+            f"Do NOT wrap in markdown code blocks. Do NOT use triple backticks."
+        )
+
+        # assemble message list
+        messages: list[dict] = [
+            {"role": "system", "content": system_prompt},
+        ]
+
+        for msg in self.context:
+            role = msg["role"]
+            # Mistral only accepts system / user / assistant / tool (for function-call results).  Map generic "tool" context note to "user" so the API always accepts them.
+            if role == "tool":
+                role = "user"
+
+            if "images" in msg and msg["images"]:
+                # Mistral vision format
+                content = [
+                    {"type": "text", "text": msg["content"]},
+                    *[
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{img}",
+                            },
+                        }
+                        for img in msg["images"]
+                    ],
+                ]
+                messages.append({"role": role, "content": content})
+            else:
+                messages.append({"role": role, "content": msg["content"]})
+
+        # Schema reminder just before generation
+        # messages.append({
+        #     "role": "system",
+        #     "content": (
+        #         f"{schema_json}\n"
+        #         "Follow this schema strictly. Do not repeat your last message."
+        #     ),
+        # })
+
+        # RAG as assistant prefill
+        if rag is not None:
+            messages.append({
+                "role": "assistant",
+                "content": f"(Temporal memory: {rag})\n"+"""{
+    "users": [""",
+                "prefix": True,
+            })
+
+        response = self._mistral_request(
+            messages=messages,
+            stream=True,
+            temperature=0.6,
+            frequency_penalty=0.5,
+            presence_penalty=0.6,            
+        )
+
+        constructed_response = ""
+        tool_called = False
+
+        def _get_field(key: str, text: str) -> Optional[str]:
+            """Extract a JSON string value by key."""
+            pattern = rf'"{key}"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"'
+            m = re.search(pattern, text)
+            return m.group(1) if m else None
+
+        def _get_array_field(key: str, text: str) -> Optional[list]:
+            pattern = rf'"{key}"\s*:\s*(\[.*?\])'
+            m = re.search(pattern, text, re.DOTALL)
+            if m:
+                try:
+                    return json.loads(m.group(1))
+                except json.JSONDecodeError:
+                    return None
+            return None
+
+        for raw_line in response.iter_lines():
+            if not raw_line:
+                continue
+
+            line_str = raw_line.decode("utf-8").strip()
+            if not line_str.startswith("data: "):
+                continue
+
+            data_str = line_str[6:]
+            if data_str == "[DONE]":
+                break
+
+            try:
+                chunk_data = json.loads(data_str)
+                choices = chunk_data.get("choices", [])
+                if not choices:
+                    continue
+                delta = choices[0].get("delta", {})
+                chunk_content = delta.get("content", "")
+            except json.JSONDecodeError:
+                continue
+
+            if not chunk_content:
+                continue
+
+            constructed_response += chunk_content
+
+            # live field extraction
+            tool_json_str = self._get_object_field("tool", constructed_response)
+
+            if tool_json_str:
+                try:
+                    tool_obj = json.loads(tool_json_str)
+
+                    if not tool_called and "type" in tool_obj:
+                        print(f"Tool found: {tool_obj['type']}")
+
+                        if tool_obj["type"] == "browsing":
+                            query = tool_obj["query"]
+                            mode = tool_obj["mode"]
+
+                            if mode == "web":
+                                web_result = tools.web(query)
+                                self.add_to_context(
+                                    f"query: {query}\n\n{web_result}",
+                                    role="tool",
+                                )
+                                break
+
+                            elif mode == "gif":
+                                gif_link = tools.gif(query)
+                                self.reply["message"] = gif_link
+                                self.add_to_context(
+                                    f"query: {query}\n\n{gif_link}",
+                                    role="tool",
+                                )
+
+                            elif mode == "youtube":
+                                youtube_link = tools.youtube(query)
+                                self.add_to_context(
+                                    f"query: {query}\n\n{youtube_link}",
+                                    role="tool",
+                                )
+                                break
+
+                        if tool_obj["type"].lower() == "pythonexecution":
+                            script = tool_obj["script"]
+                            python_result = tools.python_execution(script)
+                            self.add_to_context(
+                                f"script: {script}\n\nresult: {python_result}",
+                                role="tool",
+                            )
+                            print(f"Script result: {python_result}")
+                            break
+
+                        if tool_obj["type"] == "voiceMessageGeneration":
+                            text = tool_obj["text"]
+                            voice_message = tools.voice_message_generation(text)
+                            self.reply["attachments"].append(voice_message)
+                            self.add_to_context(
+                                f"Generated a voice message with text: {text}",
+                                role="tool",
+                            )
+
+                        if tool_obj["type"] == "attachments":
+                            file_path = tool_obj["path"]
+                            self.reply["attachments"].append(file_path)
+                            self.add_to_context(
+                                f"Added attachment from path: {file_path}",
+                                role="tool",
+                            )
+
+                        tool_called = True
+                        self.reply["tool"] = tool_obj
+
+                except json.JSONDecodeError:
+                    pass
+
+            tar_usr = _get_field("target_user", constructed_response)
+            if tar_usr is not None:
+                self.reply["tar_usr"] = tar_usr
+                self.state["Replying"] = 1
+                self.state["thinking"] = 0
+
+            message = _get_field("reply", constructed_response)
+            if message is not None:
+                self.reply["message"] = message
+                self.state["done"] = 1
+
+            attachments = _get_array_field("attachments", constructed_response)
+            if attachments is not None:
+                self.reply["attachments"] = attachments
+
+            unknown_fact = _get_field("unknown_fact", constructed_response)
+            if unknown_fact is not None or unknown_fact != "null":
+                self.reply["unknown_fact"] = unknown_fact
+
+            self.prev_reply = copy.deepcopy(self.reply)
+
+            print(chunk_content, end="", flush=True)
+
+        # post-processing
+        if self.reply["unknown_fact"]:
+            rag_embedding.write_memory(self.reply["unknown_fact"])
+
+        if self.reply["message"]:
+            self.add_to_context(self.reply["message"], role="assistant")
+            chat_summary = _get_field("summary", constructed_response)
+            if chat_summary is not None:
+                try:
+                    with open("chat_summary.txt", "w", encoding="utf-8") as f:
+                        f.write(chat_summary)
+                except Exception as e:
+                    print(f"Error saving summary: {e}")
+
+        return constructed_response
+
+
 if __name__ == "__main__":
-    assistant = LLM(model=config.DEFAULT_MODEL)
-    response = assistant.generate("What is the capital of France?")
-    print(response)
-    print(f"context:\n{assistant.context}")
+    import rag_embedding
+    import config
+
+    AI = LLM(
+        model_name="mistral-large-latest",
+        client="https://api.mistral.ai",
+        system_prompt=config.SYSTEM_PROMPT,
+    )
+
+    r = AI.generate(
+        prompt={
+            "role": "user",
+            "content": "Hello",
+        },
+    )
+
+    print(r)
