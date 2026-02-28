@@ -6,7 +6,7 @@ To-Do:
 - Fix mentions in replies
 - Fix \n in replies and * in tools/msg_schema
 - Script support (sandboxing required)
-- TTS support
+- TTS support as real voice messages (not just attachments)
 - Media support (voice messages)
 - Typing animation
 - removes hypertext from voice messages
