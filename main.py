@@ -32,6 +32,8 @@ last_channel = None
 
 new_message_event = asyncio.Event()
 
+last_message_timestamp = None
+
 @client.event
 async def on_ready():
     client.loop.create_task(main())

@@ -13,6 +13,10 @@ def read_memory(n, query=""):
     with open("data.csv", newline="", encoding="utf-8") as f:
         docs = [f"{r['content']}" for r in csv.DictReader(f)]
 
+    # Check if there's at least one element in docs
+    if not docs:
+        return "No memory found."
+
     embeds_response = client.embeddings.create(model=MODEL, inputs=docs)
     embeds =[item.embedding for item in embeds_response.data]
     DB.upsert(ids=[str(i) for i in range(len(docs))], embeddings=embeds, documents=docs)
