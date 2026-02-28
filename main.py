@@ -13,10 +13,16 @@ import discord
 import asyncio
 import time
 import os
+import pathlib
+from mistralai import Mistral, File
+from dotenv import load_dotenv
+
 
 from core import LLM
 import config
 import rag_embedding
+
+load_dotenv()
 
 WAIT = 20
 
@@ -90,6 +96,7 @@ async def on_message(msg):
     timestamp_str = msg.created_at.strftime("%a %H:%M")
 
     image_paths = []
+    audio_paths = []
 
     if msg.attachments:
         for attachment in msg.attachments:
@@ -100,6 +107,13 @@ async def on_message(msg):
                 await attachment.save(file_path)
                 
                 image_paths.append(file_path)
+            #audio
+            if attachment.content_type and attachment.content_type.startswith('audio/'):
+                filename = f"{msg.id}_{attachment.filename}" 
+                file_path = os.path.join(download_dir, filename)
+                await attachment.save(file_path)
+                
+                transcription = AI.transcribe_audio(file_path)
 
     if msg.mentions:
         for user in msg.mentions:

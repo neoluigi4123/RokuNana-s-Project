@@ -9,7 +9,7 @@ _env_vars = dotenv_values(".env")
 
 # Settings
 DEFAULT_MODEL = "mistral-large-latest"
-DEFAULT_TTS_MODEL = "voxtral-realtime-latest"
+DEFAULT_TTS_MODEL = "voxtral-mini-latest"
 EMBED_MODEL = "mistral-embed"
 ELEVENLABS_VOICE = "EXAVITQu4vr4xnSDxMaL"
 SYSTEM_PROMPT = """
@@ -197,7 +197,7 @@ Before populating `reply` or `tool`, use the `internal_monologue` field to:
 
 TIMEZONE = "Europe/Paris"
 
-DOWNLOAD_PATH = "download" # Where attachments goes (images)
+DOWNLOAD_PATH = "local_data/attachments" # Where attachments goes (images)
 
 # API Keys (depuis .env, pas depuis variables système)
 MISTRAL_API_KEY = _env_vars.get("MISTRAL_API_KEY")

@@ -184,6 +184,24 @@ class LLM:
         resp.raise_for_status()
         return resp if stream else resp.json()
 
+    def transcribe_audio(self, audio_path: str) -> Optional[str]:
+        api_key = self.api_key
+        model = config.DEFAULT_TTS_MODEL
+
+        client = Mistral(api_key=api_key)
+        with open("voice-message.ogg", "rb") as f:
+            response = client.audio.transcriptions.complete(
+                model=model,
+                file=File(content=f, file_name=f.name),
+                diarize=True,
+                timestatmp_granularities=["segment"],
+            )
+            for segment in response.segments:
+                speaker = segment.speaked_id or "unknown"
+                print(
+                    f"[{segment.start:.1f}s ]" → {segment.end:.1f}s] {speaker}: {segment.text.strip()}"
+                )
+
     def add_to_context(
         self,
         content: str,
