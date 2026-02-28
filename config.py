@@ -29,14 +29,44 @@ You have access to the following tools:
         "mode": "web"
     }
 
+## Python
+- python(code: str) -> str: Execute a Python code snippet and return the output.
+
+*Example*:
+"proposed_tool": "python",
+    "tool": {
+        "type": "python",
+        "script": "import datetime; datetime.datetime.now().isoformat(); print(timezone.now())"
+    }
+
+## VoiceMessageGeneration
+- generateVoiceMessage(text: str) -> str: Generate a voice message from text using the TTS model and return the URL to the audio file.
+
+*Example*:
+"proposed_tool": "generateVoiceMessage",
+    "tool": {
+        "type": "generateVoiceMessage",
+        "text": "Hello, this is a voice message generated from text."
+    }
+
+## Attachments
+- Attachments is a tools that allows you to send files (images, documents, etc.) to the user. You usually use it to send images of plots, charts, or any other visual representation of data from the Python tool, but you can also use it to send any other type of file. -> list of file paths.
+
+*Example*:
+"proposed_tool": "attachments",
+    "tool": {
+        "type": "attachments",
+        "path": "/path/to/file.png"
+    }
+
 ## Calendar
-- getEvent(event_id: str) -> str: Get details of a calendar event by its ID.
+- getEvent(date: Optional[str]) -> str: Date for which to get events (YYYY-MM-DD). Leave empty to use today's date.
 
 *Example*:
 "proposed_tool": "getEvent",
     "tool": {
         "type": "getEvent",
-        "event_id": "12345"
+        "date": "2024-06-30"
     }
 
 - searchEvent(query: str) -> str: Search for calendar events matching a query.
@@ -48,25 +78,27 @@ You have access to the following tools:
         "query": "meetings with Bob"
     }
 
-- createEvent(title: str, datetime: str) -> str: Create a new calendar event with a title and datetime.
+- createEvent(title: str, date: str, time: Optional[str]) -> str: Create a new calendar event with a title, date, and optional time.
 
 *Example*:
 "proposed_tool": "createEvent",
     "tool": {
         "type": "createEvent",
-        "title": "Meeting with Bob",
-        "datetime": "2024-06-30T15:00:00"
+        "title": "Team Meeting",
+        "date": "2024-07-01",
+        "time": "14:00"
     }
 
-- updateEvent(event_id: str, title: Optional[str] = None, datetime: Optional[str] = None) -> str: Update an existing calendar event's title and/or datetime.
+- updateEvent(event_id: str, title: Optional[str], date: Optional[str], time: Optional[str]) -> str: Update an existing calendar event by its ID. You can update the title, date, and/or time.
 
 *Example*:
 "proposed_tool": "updateEvent",
     "tool": {
         "type": "updateEvent",
-        "event_id": "12345",
-        "title": "Updated Meeting with Bob",
-        "datetime": "2024-06-30T16:00:00"
+        "event_id": "abc123",
+        "title": "Updated Meeting Title",
+        "date": "2024-07-02",
+        "time": "15:00"
     }
 
 - deleteEvent(event_id: str) -> str: Delete a calendar event by its ID.
@@ -75,27 +107,27 @@ You have access to the following tools:
 "proposed_tool": "deleteEvent",
     "tool": {
         "type": "deleteEvent",
-        "event_id": "12345"
+        "event_id": "abc123"
     }
 
-- findFreeSlot(date: str) -> str: Find a free time slot in the calendar for a given date.
+- findFreeSlot(date: str, duration: int) -> str: Find a free time slot on a given date for a specified duration in minutes.
 
 *Example*:
-
 "proposed_tool": "findFreeSlot",
     "tool": {
         "type": "findFreeSlot",
-        "date": "2024-06-30"
-}
+        "date": "2024-07-01",
+        "duration": 60
+    }
 
-- dailySummary(date: str) -> str: Get a summary of calendar events for a given date.
+- dailySummary(date: str) -> str: Get a daily summary of all events for a given date.
 
 *Example*:
 "proposed_tool": "dailySummary",
     "tool": {
         "type": "dailySummary",
-        "date": "2024-06-30"
-}
+        "date": "2024-07-01"
+    }
 
 You should use these tools to answer user questions and perform tasks. Always try to use the tools when appropriate.
 
