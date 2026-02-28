@@ -8,9 +8,9 @@ import os
 import json
 
 class LLM:
-    def __init__(self, model: str, api_key: str = str(config.MISTRAL_API_KEY)):
+    def __init__(self, model: str):
         self.model = model
-        self.client = Mistral(api_key=api_key)
+        self.client = Mistral()
         self.context: list[Any] = [
             {
                 "role": "system",
@@ -35,6 +35,7 @@ class LLM:
                 messages = self.context,
             )
             result = chat_response.choices[0].message
+        return result
 
     def add_to_context(self, content: str, role: str = 'user') -> None:
         """Adds contents to the context.
@@ -55,8 +56,6 @@ class LLM:
                 json.dump(self.context, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Error saving context: {e}")
-
-        
 
 if __name__ == "__main__":
     assistant = LLM(model=config.DEFAULT_MODEL)

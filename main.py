@@ -11,7 +11,9 @@ from core import LLM
 import config
 
 WAIT = 20
+
 download_dir = config.DOWNLOAD_PATH
+AI = LLM(config.DEFAULT_MODEL)
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -102,7 +104,7 @@ async def on_reaction_add(reaction, user):
     if user == client.user:
         return
 
-    kb.add_context(f"{user} reacted with {reaction.emoji} to message: {reaction.message.content}", role="system")
+    AI.add_to_context(content=f"{user} reacted with {reaction.emoji} to message: {reaction.message.content}", role="system")
 
 async def main():
     global last_message_timestamp
@@ -127,8 +129,8 @@ async def main():
         new_message_event.clear()
 
         # Summary
-        if len(kb.context) > config.MAX_LENGTH: # Default: 15 for stability, 40 for deployment (but can cause more repetition as of now)
-            kb.summarize_chat(10)
+        if len(AI.context) > config.MAX_LENGTH: # Default: 15 for stability, 40 for deployment (but can cause more repetition as of now)
+            AI.summarize_chat(10)
 
         new_messages = current_context[len(chat_history):]
         
@@ -144,10 +146,10 @@ async def main():
         for msg in new_messages:
             # if image:
             if 'attachments' in msg and msg['attachments']:
-                kb.add_context(msg['content'], msg['role'], images=msg['attachments'])
+                AI.add_to_context(msg['content'], msg['role'], images=msg['attachments'])
 
             else:
-                kb.add_context(msg['content'], msg['role'])
+                AI.add_to_context(msg['content'], msg['role'])
 
         if new_messages:
             RAG_results_pre = rag_embedding.read_memory(4, str(new_messages))
@@ -157,18 +159,18 @@ async def main():
         time_diff = int(time.time() - last_message_timestamp if last_message_timestamp else 0)
         
         try:
-            await asyncio.to_thread(kb.generate_response, rag = f"{RAG_results}Last activity {time_diff} sec ago." if RAG_results else f"Last activity {time_diff} sec ago.")
+            await asyncio.to_thread(AI.generate_response, rag = f"{RAG_results}Last activity {time_diff} sec ago." if RAG_results else f"Last activity {time_diff} sec ago.")
         except Exception as e:
             print(f"Error generating response: {e}")
             pass
 
-        while kb.state['done'] is False:
+        while AI.state['done'] is False:
             await asyncio.sleep(1)
         
         # Send reply
-        reply_content = kb.reply.get('message', None)
-        tar_user = kb.reply.get('tar_usr', None)
-        attachment = kb.reply.get('attachments', None)
+        reply_content = AI.reply.get('message', None)
+        tar_user = AI.reply.get('tar_usr', None)
+        attachment = AI.reply.get('attachments', None)
 
         reply_channel = None
 
