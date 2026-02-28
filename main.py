@@ -5,6 +5,10 @@ To-Do:
 - Modulate wait time based on activity (e.g., more active channels get shorter wait times)
 - Fix mentions in replies
 - Fix \n in replies and * in tools/msg_schema
+- Script support (sandboxing required)
+- TTS support
+- Media support (voice messages)
+- Typing animation
 """
 
 import discord

@@ -30,6 +30,7 @@ You have access to specific tools. You must choose the correct tool based on the
     - Use `mode="youtube"` for video requests.
 - **PythonExecution** (`type="pythonExecution"`):
     - Use for math, plotting, data analysis, or complex logic.
+    - Provide the code in the `script` field. The print statements of the script will be fed back to you for your final reply.
 
 ## 2. Action Tools (Reply is allowed)
 *When using these tools, the action happens immediately. You generally provide a `reply` confirming the action.*

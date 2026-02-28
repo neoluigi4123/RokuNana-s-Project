@@ -108,7 +108,7 @@ def youtube(query: str) -> str:
     except Exception as e:
         return f"Error: {e}"
 
-def python_execution(script: str, timeout: int = 30) -> str:
+def python_execution(script: str) -> str:
     return scripting.run_script(script)
 
 def voice_message_generation(input):
