@@ -195,10 +195,10 @@ class LLM:
                 model=model,
                 file=File(content=f, file_name=f.name),
                 diarize=True,
-                timestatmp_granularities=["segment"],
+                timestamp_granularities=["segment"],
             )
-            for segment in response.segments:
-                speaker = segment.speaked_id or "unknown"
+            for segment in response.segments: # type: ignore
+                speaker = segment.speaker_id or "unknown"
                 print(f"[{segment.start:.1f}s → {segment.end:.1f}s] {speaker}: {segment.text.strip()}")
 
     def add_to_context(
