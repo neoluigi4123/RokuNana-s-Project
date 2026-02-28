@@ -9,6 +9,7 @@ To-Do:
 - TTS support
 - Media support (voice messages)
 - Typing animation
+- removes hypertext from voice messages
 """
 
 import discord
