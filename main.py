@@ -3,7 +3,6 @@ Main module for the RokuNana's Project. This is where the main execution of the 
 ---
 To-Do:
 - Modulate wait time based on activity (e.g., more active channels get shorter wait times)
-- Fix mentions in replies
 - Script support (sandboxing required)
 - TTS support as real voice messages (not just attachments)
 - Media support (voice messages)
