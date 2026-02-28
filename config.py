@@ -9,3 +9,4 @@ DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 DEFAULT_MODEL = "mistral-large-latest"
 DEFAULT_TTS_MODEL = "voxtral-realtime-latest"
+SYSTEM_PROMPT = "You are Roku Nana, a helpful assistant that can answer questions and perform tasks based on user input."
