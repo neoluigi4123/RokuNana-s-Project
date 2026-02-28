@@ -77,11 +77,12 @@ def gif(query: str) -> str:
             if data["data"]:
                 print("Success: Here is a GIF URL:")
                 print(data["data"][0]["images"]["original"]["url"])
+                return data["data"][0]["images"]["original"]["url"]
             else:
                 print("No GIFs found for the query.")
         else:
             print(f"Error: Received status code {response.status_code} from Giphy API.")
-            print(response.text)
+            print(response.text
 
     except Exception as e:
         print(f"An error occurred: {e}")
