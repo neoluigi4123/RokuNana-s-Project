@@ -54,7 +54,7 @@ class CreateEvent(BaseModel):
     type: Literal["createEvent"] = "createEvent"
     title: str = Field(..., description="Title of the event")
     date: str = Field(..., description="Date of the event (YYYY-MM-DD). You can use natural language like 'today' or 'tomorrow'.")
-    time: Optional[str] = Field(None, description="Time of the event (HH:MM)")
+    time: Optional[str] = Field(None, description="Time of the event (HH:MM). Must not use a '-' when you write the time, just '14:30' for example and not '14-30'.")
 
 class UpdateEvent(BaseModel):
     """Update a calendar event | requires 'feedback'"""
@@ -62,7 +62,7 @@ class UpdateEvent(BaseModel):
     event_id: str = Field(..., description="ID of the event to update")
     title: Optional[str] = Field(None, description="New title of the event")
     date: Optional[str] = Field(None, description="New date of the event (YYYY-MM-DD)")
-    time: Optional[str] = Field(None, description="New time of the event (HH:MM)")
+    time: Optional[str] = Field(None, description="New time of the event (HH:MM). Must not use a '-' when you write the time, just '14:30' for example and not '14-30'.")
 
 class DeleteEvent(BaseModel):
     """Delete a calendar event | requires 'feedback'"""
