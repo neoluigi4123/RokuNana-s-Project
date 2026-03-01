@@ -269,14 +269,12 @@ async def main():
                         except Exception as e:
                             print(f"Failed to initiate DM with {tar_user}: {e}")
 
-            if AI.reply.get('type', None) == "voiceMessageGeneration" or AI.reply.get('tool', "").get('type', None) == "voiceMessageGeneration" and attachment:
-                print("voice message detected")
+            if AI.reply.get('type', None) == "voiceMessageGeneration" and attachment:
                 vocal_attachment_path = attachment[0]  # Assuming the TTS tool returns a single file path in attachments
                 convert_to_ogg(vocal_attachment_path, "voice-message.ogg")
-                print("voice message converted")
                 try:
-                    print(f"sending voice message in: {str(reply_channel.id)}.")
-                    await voice_utils.send_voice_message(client, reply_channel.id, "voice-message.ogg")
+                    await voice_utils.send_voice_message(client, reply_channel.id, "voice-message.ogg") # type: ignore
+                    attachment.pop[0]
                 except Exception as e:
                     print(f"Error sending voice message: {e}")
                     AI.add_to_context(role="tool", content=f"Failed to send voice message: {e}")
