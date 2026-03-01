@@ -3,6 +3,7 @@ Allowing LLMs to do Multi-Party chat (with multiple users)
 # Table of Contents
 - [Project presentation](#project-presentation)
 - [Setup Instructions](#setup-instructions)
+- [Keys and configuration](#keys-and-configuration)
 # Project presentation
 
 Pipeline chart:
@@ -88,3 +89,11 @@ Pipeline chart:
     ```bash
     python main.py
     ```
+# Keys and configuration
+- Create a `.env` file in the root of the project and add the following variables with your own values:
+```python
+# ElevenLabs API configuration
+MISTRAL_API_KEY=PUT_YOUR_ACTUAL_MISTRAL_API_KEY_HERE
+DISCORD_BOT_TOKEN=PUT_YOUR_ACTUAL_DISCORD_BOT_TOKEN_HERE
+ELEVENLABS_API_KEY=PUT_YOUR_ACTUAL_ELEVENLABS_API_KEY_HERE
+```
