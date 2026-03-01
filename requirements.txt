@@ -13,3 +13,8 @@ aiohttp
 pydub
 opencv-python
 numpy
+chardet
+python-docx
+odfpy
+striprtf
+PyPDF2

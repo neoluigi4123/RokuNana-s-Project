@@ -20,7 +20,7 @@ import load_file
 
 load_dotenv()
 
-WAIT = 200
+WAIT = 20
 
 download_dir = config.DOWNLOAD_PATH
 os.makedirs(download_dir, exist_ok=True) 
