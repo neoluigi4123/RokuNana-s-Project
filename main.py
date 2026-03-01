@@ -344,6 +344,10 @@ async def main():
     await client.wait_until_ready()
 
     while True:
+        # Check if user message in context
+        if not any(msg for msg in current_context if msg['role'] == 'user'):
+            await asyncio.sleep(1)
+            continue
         # Default values
         RAG_results = ""
         print(wait_time)

@@ -214,11 +214,19 @@ def create_event(
             "end": {"date": date_str},
         }
     else:
-        # Timed event — default 60 min duration
-        parts = time.strip().split(":")
-        hour, minute = int(parts[0]), int(parts[1])
-        start_dt = day.replace(hour=hour, minute=minute, second=0, microsecond=0)
-        end_dt = start_dt + timedelta(minutes=60)
+        # Timed event — support fixed duration or explicit range
+        t = time.strip()
+        if "-" in t:
+            start_str, end_str = t.split("-", 1)
+            sh, sm = [int(x) for x in start_str.strip().split(":")]
+            eh, em = [int(x) for x in end_str.strip().split(":")]
+            start_dt = day.replace(hour=sh, minute=sm, second=0, microsecond=0)
+            end_dt = day.replace(hour=eh, minute=em, second=0, microsecond=0)
+        else:
+            parts = t.split(":")
+            hour, minute = int(parts[0]), int(parts[1])
+            start_dt = day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            end_dt = start_dt + timedelta(minutes=60)
 
         event_body = {
             "summary": title,
@@ -280,23 +288,32 @@ def update_event(
             new_day = new_day.replace(hour=0, minute=0, second=0, microsecond=0)
 
         if time is not None:
-            parts = time.strip().split(":")
-            hour, minute = int(parts[0]), int(parts[1])
-            start_dt = new_day.replace(
-                hour=hour, minute=minute, second=0, microsecond=0
-            )
-
-            # Preserve original duration if possible
-            old_start_raw = event["start"].get("dateTime")
-            old_end_raw = event["end"].get("dateTime")
-            if old_start_raw and old_end_raw:
-                old_s = _parse_dt(old_start_raw).replace(tzinfo=None)
-                old_e = _parse_dt(old_end_raw).replace(tzinfo=None)
-                duration = old_e - old_s
+            t = time.strip()
+            if "-" in t:
+                # user supplied explicit range
+                start_str, end_str = t.split("-", 1)
+                sh, sm = [int(x) for x in start_str.split(":")]
+                eh, em = [int(x) for x in end_str.split(":")]
+                start_dt = new_day.replace(hour=sh, minute=sm, second=0, microsecond=0)
+                end_dt = new_day.replace(hour=eh, minute=em, second=0, microsecond=0)
             else:
-                duration = timedelta(minutes=60)
+                parts = t.split(":")
+                hour, minute = int(parts[0]), int(parts[1])
+                start_dt = new_day.replace(
+                    hour=hour, minute=minute, second=0, microsecond=0
+                )
 
-            end_dt = start_dt + duration
+                # Preserve original duration if possible
+                old_start_raw = event["start"].get("dateTime")
+                old_end_raw = event["end"].get("dateTime")
+                if old_start_raw and old_end_raw:
+                    old_s = _parse_dt(old_start_raw).replace(tzinfo=None)
+                    old_e = _parse_dt(old_end_raw).replace(tzinfo=None)
+                    duration = old_e - old_s
+                else:
+                    duration = timedelta(minutes=60)
+
+                end_dt = start_dt + duration
 
             event["start"] = {"dateTime": _dt_iso(start_dt), "timeZone": TIMEZONE}
             event["end"] = {"dateTime": _dt_iso(end_dt), "timeZone": TIMEZONE}
@@ -529,7 +546,7 @@ if __name__ == "__main__":
     for e in search_event("lunch"):
         print(f"  - {e['title']} on {e['start'][:10]} at {e['time_display']}")
 
-    print("\nCreating a test event...")
+    print("\nCreating a test event (1‑hour)…")
     new_event = create_event(
         title="Test Meeting",
         date="today",
@@ -537,6 +554,16 @@ if __name__ == "__main__":
     )
     print(
         f"  Created: {new_event['title']} at {new_event['time_display']}"
+    )
+
+    print("\nCreating a test event with explicit range…")
+    new_event2 = create_event(
+        title="Morning Range",
+        date="today",
+        time="08:00-09:30",
+    )
+    print(
+        f"  Created: {new_event2['title']} at {new_event2['time_display']}"
     )
 
     print("\nFree slots today (30 min):")
