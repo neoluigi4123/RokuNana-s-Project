@@ -146,7 +146,26 @@ async def on_message(msg):
     last_context_str = current_context_str
 
     timestamp_str = msg.created_at.strftime("%a %H:%M")
-
+    #Video Analysis
+    #Youtube link:
+    if "youtube.com/watch" in msg.content or "youtu.be/" in msg.content:
+        video_url = None
+        for word in msg.content.split():
+            if "youtube.com/watch" in word or "youtu.be/" in word:
+                video_url = word
+                break
+        if video_url:
+            content += f"send a youtube video: {video_url}"
+    
+    elif any(ext in msg.content for ext in [".mp4", ".mov", ".avi", ".mkv"]):
+        video_path = None
+        for word in msg.content.split():
+            if any(ext in word for ext in [".mp4", ".mov", ".avi", ".mkv"]):
+                video_path = word
+                break
+        if video_path:
+            frames = extract_frame(video_path)
+            content += f"send a video file with frames extracted: {', '.join(frames)}"
     image_paths = []
 
     if msg.attachments:
