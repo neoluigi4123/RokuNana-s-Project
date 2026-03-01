@@ -13,6 +13,8 @@ import time
 import os
 from dotenv import load_dotenv
 from pydub import AudioSegment
+
+import voice_utils
 from core import LLM
 import config
 import rag_embedding
@@ -270,16 +272,10 @@ async def main():
                 vocal_attachment_path = attachment[0]  # Assuming the TTS tool returns a single file path in attachments
                 convert_to_ogg(vocal_attachment_path, "voice-message.ogg")
                 try:
-                    success = await voice_utils.send_voice_message(client, msg.channel.id, reply[1])
-                    if not success:
-                        # Fallback to sending as a regular file if native voice message fails
-                        msg_process[msg.id] = False
-                        msg_process.pop(msg.id, None)
-                        
-                        await reply_channel.send(file=discord.File("voice-message.ogg"), reference=msg if _reply else None)
+                    await voice_utils.send_voice_message(client, last_channel, reply_content)
                 except Exception as e:
                     print(f"Error sending voice message: {e}")
-                    save_context(role="tool", content=f"Failed to send voice message: {e}")
+                    AI.add_to_context(role="tool", content=f"Failed to send voice message: {e}")
 
             # Final Sending Logic
             if reply_channel:
