@@ -145,8 +145,6 @@ class LLM:
             "Replying": 0,
             "done": 0,
             "Avg_room_activity": 0,
-            "Compliance": 0,
-            "extend_wait": False,
         }
 
         self.context = []
@@ -459,12 +457,6 @@ class LLM:
                 except json.JSONDecodeError:
                     return None
             return None
-        
-        def _get_int_field(key: str, text: str) -> Optional[int]:
-            """Extract a JSON integer value by key."""
-            pattern = rf'"{key}"\s*:\s*(\d+)'
-            m = re.search(pattern, text)
-            return int(m.group(1)) if m else None
 
         for raw_line in response.iter_lines(): # type: ignore
             if not raw_line:
@@ -606,14 +598,6 @@ class LLM:
             unknown_fact = _get_field("unknown_fact", constructed_response)
             if unknown_fact is not None or unknown_fact != "null":
                 self.reply["unknown_fact"] = unknown_fact
-
-            comp_val = _get_int_field("compliance_willingness", constructed_response)
-            if comp_val is not None:
-                self.state['Compliance'] = comp_val
-
-            engagements = re.findall(r'"engagement_level"\s*:\s*(\d+)', constructed_response)
-            if engagements:
-                self.state['Avg_room_activity'] = sum(int(lvl) for lvl in engagements) / len(engagements)
 
             self.prev_reply = copy.deepcopy(self.reply)
 
