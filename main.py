@@ -5,6 +5,7 @@ To-Do:
 - Avoid first message if no user in context.
 - Tools with feedbacks don't raise the wait time.
 - Add calendar tool to self.tool_mapping in core.py.
+- Roku Nana's voice messages format proper metadata
 """
 
 import discord
