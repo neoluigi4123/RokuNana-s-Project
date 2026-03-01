@@ -23,7 +23,7 @@ Pipeline chart:
 
 1. Clone the repository and navigate to the project directory.
    ```bash
-   git clone
+   git clone https://github.com/neoluigi4123/RokuNana-s-Project.git
    cd RokuNana-s-Project
    ```
 
