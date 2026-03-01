@@ -11,4 +11,3 @@ ddgs
 elevenlabs
 aiohttp
 pydub
-wasmtime
