@@ -18,6 +18,22 @@ Pipeline chart:
 4. If actionable items are detected, the system interacts with the Google Calendar API to perform the necessary actions, such as creating events or sending invitations.
 5. The system continues the conversation, allowing for further interactions and updates as needed.
 
+# Functionalities:
+
+- Multi-party chat: The system can handle conversations involving multiple users, allowing for dynamic interactions and responses.
+- websearch integration: The system can perform web searches to gather information and provide relevant responses based on the user's queries.
+- YouTube search integration: The system can search for YouTube videos and provide links or summaries based on the user's requests.
+- Video support (both local file and Youtube direct urls): The system can process and respond to video content, whether it's a local file or a YouTube URL.
+- image support (both local file and web urls): The system can handle image content, allowing users to share and discuss images within the conversation.
+- audio support (both local file and web urls): The system can process audio content, enabling users to share and discuss audio files or links within the conversation.
+- python (math, plotting, data analysis, etc) support: The system can execute Python code for various purposes, such as performing mathematical calculations, creating plots, or analyzing data, and then share the results within the conversation.
+- attachment support: The system can manage attachments, allowing users to share files and documents within the conversation.
+- Google Calendar API integration: The system can interact with the Google Calendar API to manage events, schedule meetings, and send invitations based on the conversation's context and user requests.
+- advanced rag (retrieval-augmented generation) capabilities: The system can retrieve relevant information from external sources and use it to generate more informed and accurate responses during the conversation.
+- prefilling the context of the conversation with relevant information (e.g. from the user's calendar, web search results, etc) to make the conversation more efficient and personalized.
+- advanced pipeline architecture
+- group chat support: The system can facilitate group chats, allowing multiple users to participate in a single conversation thread.
+
 
 # Setup Instructions
 
