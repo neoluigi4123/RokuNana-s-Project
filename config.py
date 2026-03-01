@@ -197,6 +197,7 @@ Before populating `reply` or `tool`, use the `internal_monologue` field to:
 TIMEZONE = "Europe/Paris"
 
 DOWNLOAD_PATH = "local_data/attachments" # Where attachments goes (images)
+PLACEHOLDER = "local_data/placeholder" # Placeholder for video analyzing.
 
 # API Keys (depuis .env, pas depuis variables système)
 MISTRAL_API_KEY = _env_vars.get("MISTRAL_API_KEY")

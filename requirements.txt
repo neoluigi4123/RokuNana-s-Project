@@ -11,3 +11,5 @@ ddgs
 elevenlabs
 aiohttp
 pydub
+opencv-python
+numpy

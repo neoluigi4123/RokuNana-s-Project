@@ -8,7 +8,8 @@ import time
 import os
 from dotenv import load_dotenv
 from pydub import AudioSegment
-
+import cv2
+import numpy as np
 import voice_utils
 from core import LLM
 import config
@@ -44,6 +45,28 @@ last_channel = None
 new_message_event = asyncio.Event()
 
 last_message_timestamp = None
+
+def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, framerate=5):
+    """Exctracts frames from a video for given framerate."""
+    vidcap = cv2.VideoCapture(video_path)
+    success, image = vidcap.read()
+    count = 0
+    saved_frames = []
+    
+    #clean output folder first
+    for f in os.listdir(output_folder):
+        os.remove(os.path.join(output_folder, f))
+    while success:
+        if count % framerate == 0:
+            output_path = os.path.join(output_folder, f"frame_{count}.jpg")
+            cv2.imwrite(output_path, image)
+            saved_frames.append(output_path)
+        success, image = vidcap.read()
+        count += 1
+    
+    return saved_frames
+
+
 
 def convert_to_ogg(input_path, output_path):
     audio = AudioSegment.from_file(input_path)
