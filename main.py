@@ -272,7 +272,7 @@ async def main():
                 vocal_attachment_path = attachment[0]  # Assuming the TTS tool returns a single file path in attachments
                 convert_to_ogg(vocal_attachment_path, "voice-message.ogg")
                 try:
-                    await voice_utils.send_voice_message(client, last_channel, reply_content)
+                    await voice_utils.send_voice_message(client, reply_channel.id, "voice-message.ogg")
                 except Exception as e:
                     print(f"Error sending voice message: {e}")
                     AI.add_to_context(role="tool", content=f"Failed to send voice message: {e}")
