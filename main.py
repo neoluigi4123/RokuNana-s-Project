@@ -60,6 +60,27 @@ def convert_to_ogg(input_path, output_path):
         bitrate="32k"  # or "64k"
     )
 
+def get_wait_time(activity: float, compliance: float, y_max: float = 43200.0) -> float:
+    """
+    Calculate wait time based on activity level and compliance.
+
+    Args:
+        activity:   Raw activity level (0–100).
+        compliance: Compliance level (0–100).
+        y_max:      Maximum wait time cap in seconds (default 43200s).
+
+    Returns:
+        Wait time in seconds.
+    """
+    x = activity * (compliance / 100.0)
+
+    if x <= 0:
+        return y_max
+
+    y = 50_000.0 / (x ** 2)
+
+    return min(y, y_max)
+
 @client.event
 async def on_ready():
     client.loop.create_task(main())
@@ -189,7 +210,10 @@ async def main():
         chat_history = current_context.copy()
 
         if not new_messages:
-            wait_time = min(wait_time * 2.75, 43200)  # Double, Cap at 12 hours
+            if AI.state.get('Avg_room_activity'):
+                wait_time = get_wait_time(AI.state.get('Avg_room_activity'), AI.state.get('Compliance')) # type: ignore
+            else:
+                wait_time = min(wait_time * 2.75, 43200)  # Double, Cap at 12 hours
             print(f"No new messages, increasing wait time to {wait_time} seconds.")
         else:
             wait_time = WAIT  # Reset wait time on new message

@@ -145,6 +145,8 @@ class LLM:
             "thinking": 0,
             "Replying": 0,
             "done": 0,
+            "Avg_room_activity": 0,
+            "Compliance": 0,
         }
 
         self.context = []
@@ -616,6 +618,22 @@ class LLM:
                         f.write(chat_summary)
                 except Exception as e:
                     print(f"Error saving summary: {e}")
+
+        average_room_activity = 0
+        try:
+            parsed_response = json.loads(constructed_response)
+            users = parsed_response.get("users", [])
+            if users:
+                average_room_activity = sum(
+                    u.get("engagement_level", 0) for u in users
+                ) / len(users)
+            else:
+                average_room_activity = 0
+        except (json.JSONDecodeError, TypeError):
+            average_room_activity = 0
+        
+        self.state['Avg_room_activity'] = average_room_activity
+        self.state['Compliance'] = json.loads(constructed_response).get('compliance_willingness')
 
         return constructed_response
 
