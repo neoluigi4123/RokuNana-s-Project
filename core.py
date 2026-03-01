@@ -262,11 +262,37 @@ class LLM:
         return DynamicSchema
 
     def _get_object_field(self, key, text):
-        pattern = rf'"{key}"\s*:\s*({{.*?}})'
-        match = re.search(pattern, text, re.DOTALL)
-        if match:
-            return match.group(1)
-        return None
+        pattern = rf'"{key}"\s*:\s*{{'
+        match = re.search(pattern, text)
+        if not match:
+            return None
+        
+        start = match.end() - 1  # position of the opening {
+        depth = 0
+        in_string = False
+        escape = False
+        
+        for i in range(start, len(text)):
+            c = text[i]
+            if escape:
+                escape = False
+                continue
+            if c == '\\' and in_string:
+                escape = True
+                continue
+            if c == '"' and not escape:
+                in_string = not in_string
+                continue
+            if in_string:
+                continue
+            if c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+        
+        return None  # unbalanced — still streaming
 
     def _encode_image(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:
@@ -518,7 +544,8 @@ class LLM:
 
                         if tool_obj["type"].lower() == "pythonexecution":
                             script = tool_obj["script"]
-                            python_result = tools.python_execution(script)
+                            import scripting
+                            python_result = scripting.python_execution(script)
                             self.add_to_context(
                                 f"script: {script}\n\nresult: {python_result}",
                                 role="tool",

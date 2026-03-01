@@ -20,7 +20,7 @@ import load_file
 
 load_dotenv()
 
-WAIT = 17
+WAIT = 200
 
 download_dir = config.DOWNLOAD_PATH
 os.makedirs(download_dir, exist_ok=True) 
@@ -285,10 +285,13 @@ async def on_message(msg):
                 # Save the attached file
                 await attachment.save(file_path)
                 
-                # Extract the text using your load_file module
-                extracted_text = load_file.load_file(file_path)
+                # FIX: Convert the relative path to an absolute path
+                abs_file_path = os.path.abspath(file_path)
                 
-                # Add the extracted content to the context, as requested
+                # Extract the text using your load_file module
+                extracted_text = load_file.load_file(abs_file_path)
+                
+                # Add the extracted content to the context
                 AI.add_to_context(f"{msg.author.name} sent a file named {attachment.filename} with the following content:\n{extracted_text}")
 
     if msg.mentions:
