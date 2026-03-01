@@ -31,7 +31,7 @@ Pipeline chart:
 - Google Calendar API integration: The system can interact with the Google Calendar API to manage events, schedule meetings, and send invitations based on the conversation's context and user requests.
 - advanced rag (retrieval-augmented generation) capabilities: The system can retrieve relevant information from external sources and use it to generate more informed and accurate responses during the conversation.
 - prefilling the context of the conversation with relevant information (e.g. from the user's calendar, web search results, etc) to make the conversation more efficient and personalized.
-- advanced pipeline architecture
+- advanced pipeline architecture.
 - group chat support: The system can facilitate group chats, allowing multiple users to participate in a single conversation thread.
 
 
