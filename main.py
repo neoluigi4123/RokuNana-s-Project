@@ -59,24 +59,36 @@ def download_youtube_video(url, output_path):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl: # type: ignore
         ydl.download([url])
 
-def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, framerate=2400):
-    """Exctracts frames from a video for given framerate."""
+def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, num_frames=20):
+    """Extracts a specific number of evenly spaced frames from a video."""
     vidcap = cv2.VideoCapture(video_path)
-    success, image = vidcap.read()
-    count = 0
+    
+    total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    if total_frames == 0:
+        return []
+    
+    # Calculate evenly spaced frame indices
+    if num_frames >= total_frames:
+        frame_indices = list(range(total_frames))
+    else:
+        frame_indices = [int(i * (total_frames - 1) / (num_frames - 1)) for i in range(num_frames)]
+    
     saved_frames = []
     
-    #clean output folder first
+    # Clean output folder first
     for f in os.listdir(output_folder):
         os.remove(os.path.join(output_folder, f))
-    while success:
-        if count % framerate == 0:
-            output_path = os.path.join(output_folder, f"frame_{count}.jpg")
+    
+    for idx, frame_num in enumerate(frame_indices):
+        vidcap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+        success, image = vidcap.read()
+        if success:
+            output_path = os.path.join(output_folder, f"frame_{idx:04d}.jpg")
             cv2.imwrite(output_path, image)
             saved_frames.append(output_path)
-        success, image = vidcap.read()
-        count += 1
     
+    vidcap.release()
     return saved_frames
 
 def convert_to_ogg(input_path, output_path):
