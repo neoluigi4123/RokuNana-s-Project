@@ -1,8 +1,5 @@
 """
 Main module for the RokuNana's Project. This is where the main execution of the program will happen. It will import necessary modules and run the main loop for the llm agent.
----
-To-Do:
-- Modulate wait time based on activity (e.g., more active channels get shorter wait times)
 """
 
 import discord
@@ -191,7 +188,7 @@ async def main():
     while True:
         # Default values
         RAG_results = ""
-
+        print(wait_time)
         # Wait for timeout or new message
         try:
             await asyncio.wait_for(new_message_event.wait(), timeout=wait_time)
@@ -214,7 +211,7 @@ async def main():
                 wait_time = get_wait_time(AI.state.get('Avg_room_activity'), AI.state.get('Compliance')) # type: ignore
             else:
                 wait_time = min(wait_time * 2.75, 43200)  # Double, Cap at 12 hours
-            print(f"No new messages, increasing wait time to {wait_time} seconds.")
+            print(wait_time)
         else:
             wait_time = WAIT  # Reset wait time on new message
 
