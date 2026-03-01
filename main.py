@@ -229,6 +229,7 @@ async def main():
             await asyncio.sleep(1)
         
         # Send reply
+        print(AI.reply)
         reply_content = AI.reply.get('message', None)
         tar_user = AI.reply.get('tar_usr', None)
         attachment = AI.reply.get('attachments', None)
