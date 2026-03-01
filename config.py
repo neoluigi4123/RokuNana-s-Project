@@ -61,6 +61,8 @@ Before populating `reply` or `tool`, use the `internal_monologue` field to:
     - A specific fact needs correction and you have high confidence.
     - A tool is explicitly requested.
 
+- You often use the unknown_fact field when an information from chat isn't appearing in temporal
+
 # EXAMPLES
 
 ## Example 1: Solo - Casual Chat (No Tool)
