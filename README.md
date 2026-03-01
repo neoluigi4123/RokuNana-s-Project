@@ -20,17 +20,26 @@ Pipeline chart:
 
 
 # Setup Instructions
+
 1. Clone the repository and navigate to the project directory.
+   ```bash
+   git clone
+   cd RokuNana-s-Project
+   ```
+
 2. Create a virtual environment and activate it:
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
+
 3. Install the required dependencies:
    ```bash
     pip install -r requirements.txt
     ```
+
 4. Set up Google Calendar API credentials:
+
    - Go to the [Google Cloud Console](https://console.cloud.google.com/).
      
     - Create a new project.
@@ -57,22 +66,25 @@ Pipeline chart:
 ![bandicam 2026-02-28 16-10-13-932](https://github.com/user-attachments/assets/de82c641-9fd2-4d8c-a6bb-895a4b55dd34)
 ![bandicam 2026-02-28 16-10-25-021](https://github.com/user-attachments/assets/e050647f-fa73-412e-bf23-966b7dec3ec0)
 
-   -Download the JSON file
+   -Download the JSON file.
    
 ![bandicam 2026-02-28 16-10-31-094](https://github.com/user-attachments/assets/1ce8a3cb-822f-431b-b7a9-32d2f338090b)
 
-   -Rename the file to "credentials.json"
+   -Rename the file to `credentials.json`.
    
 ![bandicam 2026-02-28 16-11-16-285](https://github.com/user-attachments/assets/35d3816a-c3f3-4e15-9bed-8cc2585cda11)
 
-   -Put the credentials.json file in the "local_data" folder in the root of RokuNana-s-Project or create it if not existing
+   -Put the credentials.json file in the "local_data" folder in the root of RokuNana-s-Project or create it if not existing.
 
    -Return to the [Google Cloud Console](https://console.cloud.google.com/).
 
    -Go to View all products and search for google calendar API in the top search bar.
+
 ![bandicam 2026-02-28 16-11-45-470](https://github.com/user-attachments/assets/a66aa001-29d6-427b-bdad-9170667f25f8)
 ![bandicam 2026-02-28 16-12-38-362](https://github.com/user-attachments/assets/d76a6409-f52e-4ad7-9323-ea35a55e53b8)
+
    -Enable the Google Calendar API.
+
 ![bandicam 2026-02-28 16-12-46-988](https://github.com/user-attachments/assets/ce8cda89-36df-41e6-862d-f0ce89f6c910)
 
    -Finally, go to OAuth consent screen under APIs & Services.
@@ -89,6 +101,7 @@ Pipeline chart:
     ```bash
     python main.py
     ```
+
 # Keys and configuration
 - Create a `.env` file in the root of the project and add the following variables with your own values:
 ```python
