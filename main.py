@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from pydub import AudioSegment
 import cv2
 import numpy as np
+import yt_dlp
+
 import voice_utils
 from core import LLM
 import config
@@ -17,7 +19,7 @@ import rag_embedding
 
 load_dotenv()
 
-WAIT = 20
+WAIT = 2000
 
 download_dir = config.DOWNLOAD_PATH
 os.makedirs(download_dir, exist_ok=True) 
@@ -46,7 +48,18 @@ new_message_event = asyncio.Event()
 
 last_message_timestamp = None
 
-def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, framerate=5):
+def download_youtube_video(url, output_path):
+    ydl_opts = {
+        'format': 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[vcodec^=avc1]',
+        'outtmpl': output_path,
+        'quiet': True,
+        'no_warnings': True,
+        'merge_output_format': 'mp4',
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl: # type: ignore
+        ydl.download([url])
+
+def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, framerate=2400):
     """Exctracts frames from a video for given framerate."""
     vidcap = cv2.VideoCapture(video_path)
     success, image = vidcap.read()
@@ -65,8 +78,6 @@ def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, framerate
         count += 1
     
     return saved_frames
-
-
 
 def convert_to_ogg(input_path, output_path):
     audio = AudioSegment.from_file(input_path)
@@ -146,27 +157,41 @@ async def on_message(msg):
     last_context_str = current_context_str
 
     timestamp_str = msg.created_at.strftime("%a %H:%M")
-    #Video Analysis
-    #Youtube link:
-    if "youtube.com/watch" in msg.content or "youtu.be/" in msg.content:
+
+    image_paths = []
+    
+    # Video Analysis
+    # Youtube link:
+    if "youtube.com" in msg.content or "youtu.be/" in msg.content:
         video_url = None
         for word in msg.content.split():
-            if "youtube.com/watch" in word or "youtu.be/" in word:
+            if "youtube.com" in word or "youtu.be/" in word:
                 video_url = word
                 break
+        
         if video_url:
-            content += f"send a youtube video: {video_url}"
-    
-    elif any(ext in msg.content for ext in [".mp4", ".mov", ".avi", ".mkv"]):
-        video_path = None
-        for word in msg.content.split():
-            if any(ext in word for ext in [".mp4", ".mov", ".avi", ".mkv"]):
-                video_path = word
-                break
-        if video_path:
-            frames = extract_frame(video_path)
-            content += f"send a video file with frames extracted: {', '.join(frames)}"
-    image_paths = []
+            video_filename = f"{msg.id}_yt_video.mp4"
+            video_path = os.path.join(download_dir, video_filename)
+            
+            try:
+                await asyncio.to_thread(download_youtube_video, video_url, video_path)
+                frames = await asyncio.to_thread(extract_frame, video_path, output_folder=download_dir)
+                image_paths += frames 
+                
+                audio_segment = AudioSegment.from_file(video_path)
+                temp_audio_path = os.path.join(download_dir, f"{msg.id}_yt_temp.mp3")
+                audio_segment.export(temp_audio_path, format="mp3")
+                
+                transcription = await asyncio.to_thread(AI.transcribe_audio, temp_audio_path, msg.author.name)
+                
+                content += f" sent a youtube video: {video_url}. (Audio Transcript: {transcription})"
+                
+                if os.path.exists(temp_audio_path):
+                    os.remove(temp_audio_path)
+                    
+            except Exception as e:
+                print(f"Error processing YouTube link: {e}")
+                content += f" sent a youtube video: {video_url} (Analysis failed)."
 
     if msg.attachments:
         for attachment in msg.attachments:
@@ -187,6 +212,32 @@ async def on_message(msg):
                 transcription = AI.transcribe_audio(file_path, msg.author.name)
 
                 content += (f"send an audio file: {transcription}")
+
+            # Direct Videos
+            elif attachment.content_type and attachment.content_type.startswith('video/'):
+                filename = f"{msg.id}_{attachment.filename}" 
+                video_path = os.path.join(download_dir, filename)
+                
+                await attachment.save(video_path)
+                
+                frames = extract_frame(video_path, output_folder=download_dir)
+
+                image_paths += frames
+                
+                try:
+                    audio_segment = AudioSegment.from_file(video_path)
+                    
+                    temp_audio_path = os.path.splitext(video_path)[0] + "_temp.mp3"
+                    audio_segment.export(temp_audio_path, format="mp3")
+                    transcription = AI.transcribe_audio(temp_audio_path, msg.author.name)
+                    
+                    content += f" sent a video file. (Audio Transcript: {transcription})"
+                    if os.path.exists(temp_audio_path):
+                        os.remove(temp_audio_path)
+                        
+                except Exception as e:
+                    print(f"Error processing video audio: {e}")
+                    content += f" sent a video file (Visuals extracted, Audio failed)."
 
     if msg.mentions:
         for user in msg.mentions:
