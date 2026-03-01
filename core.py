@@ -617,6 +617,9 @@ class LLM:
                 except Exception as e:
                     print(f"Error saving summary: {e}")
 
+        self.state["thinking"] = 0
+        self.state["done"] = 1
+
         return constructed_response
 
 

@@ -362,25 +362,32 @@ async def main():
         time_diff = int(time.time() - last_message_timestamp if last_message_timestamp else 0)
         
         try:
-            await asyncio.to_thread(AI.generate, rag = f"{RAG_results}Last activity {time_diff} sec ago." if RAG_results else f"Last activity {time_diff} sec ago.")
+            # 1. Launch generation as a background task so we can monitor it live
+            rag_context = f"{RAG_results}Last activity {time_diff} sec ago." if RAG_results else f"Last activity {time_diff} sec ago."
+            gen_task = asyncio.create_task(
+                asyncio.to_thread(AI.generate, rag=rag_context)
+            )
+            
+            # 2. Wait while the bot is 'thinking' (internal monologue, tool checking)
+            while AI.state['thinking'] == 1 and not gen_task.done():
+                await asyncio.sleep(0.2)
+                
+            # 3. The bot finished thinking. Did it decide to reply?
+            if AI.state.get('Replying') == 1 and not gen_task.done():
+                if last_channel:
+                    # Trigger the typing indicator ONLY because it is actually replying
+                    async with last_channel.typing():
+                        # Wait inside the typing context until generation fully completes
+                        await gen_task
+            else:
+                # It decided to stay silent, just wait for the task to wrap up cleanly
+                await gen_task
+                
         except Exception as e:
             print(f"Error generating response: {e}")
             pass
         
-        print(f"Waiting Time: {wait_time}")
-
-        while AI.state['thinking']:
-            await asyncio.sleep(1)
-        
-        if last_channel:
-            async with last_channel.typing():
-                await asyncio.sleep(1)
-
-        while AI.state['done'] is False:
-            await asyncio.sleep(1)
-        
         # Send reply
-        print(AI.reply)
         reply_content = AI.reply.get('message', None)
         tar_user = AI.reply.get('tar_usr', None)
         attachment = AI.reply.get('attachments', None)
