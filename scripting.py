@@ -2,92 +2,100 @@ import os
 import sys
 import urllib.request
 import tempfile
+import shutil
 
 # Configuration
-WASM_RUNTIME_URL = "https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/python-3.11.3/python-3.11.3.wasm"
-WASM_FILE = "python-3.11.3.wasm"
+# Updated to use the Python 3.12.0 Wasm binary
+WASM_VERSION = "3.12.0"
+WASM_RUNTIME_URL = "https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/python%2F3.12.0%2B20231211-040d5a6/python-3.12.0.wasm"
+WASM_FILE = f"python-{WASM_VERSION}.wasm"
 
 def _ensure_dependencies():
-    """
-    Auto-setup:
-    1. Checks if 'wasmtime' lib is installed.
-    2. Checks if 'python.wasm' file exists.
-    """
-    # 1. Check Library
+    """Checks for wasmtime lib and the python.wasm image."""
     try:
         import wasmtime
     except ImportError:
         import subprocess
         print("Installing sandbox engine (wasmtime)...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "wasmtime"])
-        import wasmtime # Retry import
+        import wasmtime
 
-    # 2. Check Wasm Image
     if not os.path.exists(WASM_FILE):
-        print(f"Downloading Python Wasm image to {os.getcwd()}...")
+        print(f"Downloading Python {WASM_VERSION} Wasm image...")
         try:
-            urllib.request.urlretrieve(WASM_RUNTIME_URL, WASM_FILE)
+            req = urllib.request.Request(
+                WASM_RUNTIME_URL, 
+                headers={'User-Agent': 'Mozilla/5.0'}
+            )
+            with urllib.request.urlopen(req) as response, open(WASM_FILE, 'wb') as out_file:
+                shutil.copyfileobj(response, out_file)
             print("Download complete.")
         except Exception as e:
             raise RuntimeError(f"Failed to download Wasm image: {e}")
 
 def run_script(script: str) -> str:
-    # 1. Auto-install dependencies if needed
     _ensure_dependencies()
     
-    from wasmtime import Engine, Store, Module, Linker, WasiConfig, Config
+    from wasmtime import Engine, Store, Module, Linker, WasiConfig
 
-    # 2. Write the user script to a temp file (because we must pass it to the Wasm VM)
-    # Note: We are creating a file on the Host, but the Wasm VM can ONLY read this one file.
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tf:
-        tf.write(script)
-        script_path = tf.name
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # 1. Setup the script and log files
+        script_name = "main.py"
+        host_script_path = os.path.join(temp_dir, script_name)
+        out_log = os.path.join(temp_dir, "out.log")
+        
+        with open(host_script_path, 'w') as f:
+            f.write(script)
 
-    try:
-        # 3. Configure the Sandbox
-        engine = Engine()
-        linker = Linker(engine)
-        linker.define_wasi()
-
-        # Config WASI (The OS interface for Wasm)
-        wasi = WasiConfig()
-        wasi.inherit_argv()
-        wasi.inherit_env()
-        
-        # Capture Stdout/Stderr to a pipe
-        r_pipe, w_pipe = os.pipe()
-        wasi.stdout_file = w_pipe
-        wasi.stderr_file = w_pipe
-        
-        # MOUNTING: We only mount the script file. 
-        # The VM sees the host's 'script_path' as '/app.py'
-        # It has NO access to the rest of your drive.
-        wasi.preopen_dir(script_path, "/app.py")
-
-        store = Store(engine)
-        store.set_wasi(wasi)
-        
-        # 4. Load Python Wasm Module
-        module = Module.from_file(engine, WASM_FILE)
-        instance = linker.instantiate(store, module)
-        
-        # 5. Execute: "python /app.py"
-        # The export name '_start' is standard for WASI binaries
-        start = instance.exports(store)["_start"]
-        
         try:
-            start(store)
-        except Exception:
-            # Wasm usually throws an exit trap when the script finishes (sys.exit(0))
-            pass
+            # 2. Configure the Sandbox
+            engine = Engine()
+            linker = Linker(engine)
+            linker.define_wasi()
 
-        # 6. Read Output
-        os.close(w_pipe)
-        with os.fdopen(r_pipe, 'r') as f:
-            return f.read()
+            wasi = WasiConfig()
+            
+            # Mount the directory
+            wasi.preopen_dir(temp_dir, "/app")
+            
+            # Tell Wasm Python to run /app/main.py
+            wasi.argv = ["python", f"/app/{script_name}"]
+            wasi.inherit_env()
 
-    except Exception as e:
-        return f"Sandbox Error: {e}"
-    finally:
-        if os.path.exists(script_path):
-            os.remove(script_path)
+            # Fix: Pass string file paths instead of integer pipes
+            wasi.stdout_file = out_log
+            wasi.stderr_file = out_log
+
+            store = Store(engine)
+            store.set_wasi(wasi)
+
+            # 3. Load & Run
+            module = Module.from_file(engine, WASM_FILE)
+            instance = linker.instantiate(store, module)
+            
+            start = instance.exports(store)["_start"]
+            
+            try:
+                start(store)
+            except Exception:
+                # WASI runtimes often raise a Trap on standard sys.exit(), which is perfectly normal
+                pass
+
+            # 4. Read Output
+            with open(out_log, 'r') as f:
+                return f.read()
+
+        except Exception as e:
+            return f"Sandbox Error: {e}"
+
+if __name__ == "__main__":
+    user_script = """import sys
+print(f"Hello from Wasm! Python version: {sys.version.split()[0]}")
+for i in range(3):
+    print(f"Sandbox Count: {i}")
+"""
+    
+    print("--- Starting Sandbox ---")
+    output = run_script(user_script)
+    print("--- Sandbox Output ---")
+    print(output)
