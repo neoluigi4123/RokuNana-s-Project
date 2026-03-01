@@ -440,6 +440,7 @@ async def main():
             # Final Sending Logic
             if reply_channel:
                 try:
+                    reply_content = reply_content.encode('utf-8').decode('unicode_escape') # type: ignore
                     if attachment:
                         files = [discord.File(fp) for fp in attachment]
                         await reply_channel.send(content=reply_content, files=files)
