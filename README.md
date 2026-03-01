@@ -57,11 +57,11 @@ Pipeline chart:
 ![bandicam 2026-02-28 16-09-12-929](https://github.com/user-attachments/assets/7549c709-4561-4cac-a4e2-4e1e5e434cfa)
 ![bandicam 2026-02-28 16-09-14-619](https://github.com/user-attachments/assets/068cd856-5a80-474a-98e8-b8486d8601ee)
 
-   -Then go to Credentials under APIs & Services
+   -Then go to Credentials under APIs & Services.
    
 ![bandicam 2026-02-28 16-10-04-119](https://github.com/user-attachments/assets/4132c572-6d8f-423f-9770-3b1587a5755c)
 
-   -Create an OAuth cliend ID
+   -Create an OAuth cliend ID.
    
 ![bandicam 2026-02-28 16-10-13-932](https://github.com/user-attachments/assets/de82c641-9fd2-4d8c-a6bb-895a4b55dd34)
 ![bandicam 2026-02-28 16-10-25-021](https://github.com/user-attachments/assets/e050647f-fa73-412e-bf23-966b7dec3ec0)
@@ -74,7 +74,7 @@ Pipeline chart:
    
 ![bandicam 2026-02-28 16-11-16-285](https://github.com/user-attachments/assets/35d3816a-c3f3-4e15-9bed-8cc2585cda11)
 
-   -Put the credentials.json file in the "local_data" folder in the root of RokuNana-s-Project or create it if not existing.
+   -Put the `credentials.json` file in the `local_data/` folder in the root of RokuNana-s-Project or create it if not existing.
 
    -Return to the [Google Cloud Console](https://console.cloud.google.com/).
 
