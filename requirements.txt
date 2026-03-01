@@ -11,4 +11,4 @@ ddgs
 elevenlabs
 aiohttp
 pydub
-RestrictedPython
+wasmtime

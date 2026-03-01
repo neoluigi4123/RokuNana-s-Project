@@ -1,36 +1,93 @@
+import os
 import sys
-import io
-from RestrictedPython import compile_restricted, safe_builtins
-from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getitem
-from RestrictedPython.Guards import guarded_iter_unpack_sequence
+import urllib.request
+import tempfile
+
+# Configuration
+WASM_RUNTIME_URL = "https://github.com/vmware-labs/webassembly-language-runtimes/releases/download/python-3.11.3/python-3.11.3.wasm"
+WASM_FILE = "python-3.11.3.wasm"
+
+def _ensure_dependencies():
+    """
+    Auto-setup:
+    1. Checks if 'wasmtime' lib is installed.
+    2. Checks if 'python.wasm' file exists.
+    """
+    # 1. Check Library
+    try:
+        import wasmtime
+    except ImportError:
+        import subprocess
+        print("Installing sandbox engine (wasmtime)...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "wasmtime"])
+        import wasmtime # Retry import
+
+    # 2. Check Wasm Image
+    if not os.path.exists(WASM_FILE):
+        print(f"Downloading Python Wasm image to {os.getcwd()}...")
+        try:
+            urllib.request.urlretrieve(WASM_RUNTIME_URL, WASM_FILE)
+            print("Download complete.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to download Wasm image: {e}")
 
 def run_script(script: str) -> str:
-    """
-    Executes script in a restricted namespace within the SAME process.
-    Prevents file access and imports.
-    """
-    output = io.StringIO()
+    # 1. Auto-install dependencies if needed
+    _ensure_dependencies()
     
-    # Define the strict whitelist of allowed functions
-    # safe_builtins includes: True, False, None, abs, len, str, int, etc.
-    # It expressly EXCLUDES: open, __import__, file, exec, eval
-    restricted_globals = {
-        '__builtins__': safe_builtins,
-        '_getattr_': getattr,
-        '_getitem_': default_guarded_getitem,
-        '_getiter_': default_guarded_getiter,
-        '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
-        'print': lambda *args, **kwargs: print(*args, file=output, **kwargs),
-        'range': range,
-        'list': list,
-        'dict': dict,
-    }
+    from wasmtime import Engine, Store, Module, Linker, WasiConfig, Config
+
+    # 2. Write the user script to a temp file (because we must pass it to the Wasm VM)
+    # Note: We are creating a file on the Host, but the Wasm VM can ONLY read this one file.
+    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tf:
+        tf.write(script)
+        script_path = tf.name
 
     try:
-        # Pre-compile catches syntax errors before execution
-        byte_code = compile_restricted(script, '<inline>', 'exec')
-        exec(byte_code, restricted_globals)
-    except Exception as e:
-        return f"Error: {e}"
+        # 3. Configure the Sandbox
+        engine = Engine()
+        linker = Linker(engine)
+        linker.define_wasi()
 
-    return output.getvalue()
+        # Config WASI (The OS interface for Wasm)
+        wasi = WasiConfig()
+        wasi.inherit_argv()
+        wasi.inherit_env()
+        
+        # Capture Stdout/Stderr to a pipe
+        r_pipe, w_pipe = os.pipe()
+        wasi.stdout_file = w_pipe
+        wasi.stderr_file = w_pipe
+        
+        # MOUNTING: We only mount the script file. 
+        # The VM sees the host's 'script_path' as '/app.py'
+        # It has NO access to the rest of your drive.
+        wasi.preopen_dir(script_path, "/app.py")
+
+        store = Store(engine)
+        store.set_wasi(wasi)
+        
+        # 4. Load Python Wasm Module
+        module = Module.from_file(engine, WASM_FILE)
+        instance = linker.instantiate(store, module)
+        
+        # 5. Execute: "python /app.py"
+        # The export name '_start' is standard for WASI binaries
+        start = instance.exports(store)["_start"]
+        
+        try:
+            start(store)
+        except Exception:
+            # Wasm usually throws an exit trap when the script finishes (sys.exit(0))
+            pass
+
+        # 6. Read Output
+        os.close(w_pipe)
+        with os.fdopen(r_pipe, 'r') as f:
+            return f.read()
+
+    except Exception as e:
+        return f"Sandbox Error: {e}"
+    finally:
+        if os.path.exists(script_path):
+            os.remove(script_path)
