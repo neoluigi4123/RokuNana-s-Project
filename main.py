@@ -161,7 +161,13 @@ def get_wait_time(activity: float, compliance: float, y_max: float = 43200.0) ->
 
     y = 50_000.0 / (x ** 2)
 
-    return min(y, y_max)
+    result = min(y, y_max)
+    try:
+        WAIT = float(result)
+    except Exception:
+        pass
+
+    return result
 
 @client.event
 async def on_ready():
