@@ -16,6 +16,7 @@ import voice_utils
 from core import LLM
 import config
 import rag_embedding
+import load_file
 
 load_dotenv()
 
@@ -241,7 +242,7 @@ async def on_message(msg):
                 image_paths.append(file_path)
 
             #audio
-            if attachment.content_type and attachment.content_type.startswith('audio/'):
+            elif attachment.content_type and attachment.content_type.startswith('audio/'):
                 filename = f"{msg.id}_{attachment.filename}" 
                 file_path = os.path.join(download_dir, filename)
                 await attachment.save(file_path)
@@ -275,6 +276,20 @@ async def on_message(msg):
                 except Exception as e:
                     print(f"Error processing video audio: {e}")
                     content += f" sent a video file (Visuals extracted, Audio failed)."
+            
+            # Process text files (pdf, docx, csv, txt, etc.)
+            elif attachment.filename.lower().endswith(('.pdf', '.docx', '.odt', '.rtf', '.txt', '.csv', '.md', '.py', '.json', '.log')):
+                filename = f"{msg.id}_{attachment.filename}" 
+                file_path = os.path.join(download_dir, filename)
+                
+                # Save the attached file
+                await attachment.save(file_path)
+                
+                # Extract the text using your load_file module
+                extracted_text = load_file.load_file(file_path)
+                
+                # Add the extracted content to the context, as requested
+                AI.add_to_context(f"{msg.author.name} sent a file named {attachment.filename} with the following content:\n{extracted_text}")
 
     if msg.mentions:
         for user in msg.mentions:
