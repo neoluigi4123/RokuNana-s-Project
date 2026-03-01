@@ -459,6 +459,12 @@ class LLM:
                 except json.JSONDecodeError:
                     return None
             return None
+        
+        def _get_int_field(key: str, text: str) -> Optional[int]:
+            """Extract a JSON integer value by key."""
+            pattern = rf'"{key}"\s*:\s*(\d+)'
+            m = re.search(pattern, text)
+            return int(m.group(1)) if m else None
 
         for raw_line in response.iter_lines(): # type: ignore
             if not raw_line:
@@ -601,6 +607,14 @@ class LLM:
             if unknown_fact is not None or unknown_fact != "null":
                 self.reply["unknown_fact"] = unknown_fact
 
+            comp_val = _get_int_field("compliance_willingness", constructed_response)
+            if comp_val is not None:
+                self.state['Compliance'] = comp_val
+
+            engagements = re.findall(r'"engagement_level"\s*:\s*(\d+)', constructed_response)
+            if engagements:
+                self.state['Avg_room_activity'] = sum(int(lvl) for lvl in engagements) / len(engagements)
+
             self.prev_reply = copy.deepcopy(self.reply)
 
             print(chunk_content, end="", flush=True)
@@ -618,26 +632,6 @@ class LLM:
                         f.write(chat_summary)
                 except Exception as e:
                     print(f"Error saving summary: {e}")
-
-        average_room_activity = 0
-        try:
-            parsed_response = json.loads(constructed_response)
-            users = parsed_response.get("users", [])
-            if users:
-                average_room_activity = sum(
-                    u.get("engagement_level", 0) for u in users
-                ) / len(users)
-            else:
-                average_room_activity = 0
-        except (json.JSONDecodeError, TypeError):
-            average_room_activity = 0
-        
-        self.state['Avg_room_activity'] = average_room_activity
-
-        try:
-            self.state['Compliance'] = json.loads(constructed_response).get('compliance_willingness')
-        except Exception as e:
-            print(f"no compliance value found: {e}")
 
         return constructed_response
 
