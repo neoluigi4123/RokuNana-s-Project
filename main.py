@@ -368,7 +368,7 @@ async def main():
         chat_history = current_context.copy()
 
         if not new_messages:
-            if AI.state.get('Avg_room_activity'):
+            if AI.state.get('Avg_room_activity') and AI.state.get('Compliance'):
                 wait_time = get_wait_time(AI.state.get('Avg_room_activity'), AI.state.get('Compliance')) # type: ignore
             else:
                 wait_time = min(wait_time * 2.75, 43200)  # Double, Cap at 12 hours
