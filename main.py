@@ -25,7 +25,7 @@ import rag_embedding
 
 load_dotenv()
 
-WAIT = 20
+WAIT = 5
 
 download_dir = config.DOWNLOAD_PATH
 os.makedirs(download_dir, exist_ok=True) 
@@ -347,9 +347,8 @@ async def main():
         #if not any(msg for msg in current_context if msg['role'] == 'user'):
             #await asyncio.sleep(1)
             #continue
-        # Default values
+
         RAG_results = ""
-        print(wait_time)
         # Wait for timeout or new message
         try:
             await asyncio.wait_for(new_message_event.wait(), timeout=wait_time)
@@ -374,7 +373,7 @@ async def main():
                 wait_time = min(wait_time * 2.75, 43200)  # Double, Cap at 12 hours
             print(wait_time)
         else:
-            wait_time = WAIT  # Reset wait time on new message
+            wait_time = WAIT    # Reset wait time on new message
 
         # Only add NEW messages to context
         for msg in new_messages:
@@ -397,6 +396,8 @@ async def main():
         except Exception as e:
             print(f"Error generating response: {e}")
             pass
+        
+        print(f"Waiting Time: {wait_time}")
 
         while AI.state['thinking']:
             await asyncio.sleep(1)
