@@ -12,7 +12,7 @@ import asyncio
 import time
 import os
 from dotenv import load_dotenv
-
+from pydub import AudioSegment
 from core import LLM
 import config
 import rag_embedding
@@ -47,6 +47,18 @@ last_channel = None
 new_message_event = asyncio.Event()
 
 last_message_timestamp = None
+
+def convert_to_ogg(input_path, output_path):
+    audio = AudioSegment.from_file(input_path)
+    # Force mono, 48kHz
+    audio = audio.set_channels(1).set_frame_rate(48000)
+    # Export with Opus codec
+    audio.export(
+        output_path,
+        format="ogg",
+        codec="libopus",
+        bitrate="32k"  # or "64k"
+    )
 
 @client.event
 async def on_ready():
@@ -253,6 +265,21 @@ async def main():
                             reply_channel = await found_user.create_dm()
                         except Exception as e:
                             print(f"Failed to initiate DM with {tar_user}: {e}")
+
+            if AI.reply.get('type', None) == "voiceMessageGeneration" and attachment:
+                vocal_attachment_path = attachment[0]  # Assuming the TTS tool returns a single file path in attachments
+                convert_to_ogg(vocal_attachment_path, "voice-message.ogg")
+                try:
+                    success = await voice_utils.send_voice_message(client, msg.channel.id, reply[1])
+                    if not success:
+                        # Fallback to sending as a regular file if native voice message fails
+                        msg_process[msg.id] = False
+                        msg_process.pop(msg.id, None)
+                        
+                        await reply_channel.send(file=discord.File("voice-message.ogg"), reference=msg if _reply else None)
+                except Exception as e:
+                    print(f"Error sending voice message: {e}")
+                    save_context(role="tool", content=f"Failed to send voice message: {e}")
 
             # Final Sending Logic
             if reply_channel:
