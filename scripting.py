@@ -1,53 +1,36 @@
-"""
-scripting.py
-Execute Python scripts in a restricted environment.
-"""
+import sys
 import io
-import contextlib
-
-def safe_open(file, mode='r', *args, **kwargs):
-    """
-    A wrapper around open() that forbids writing or creating files.
-    """
-    # Normalize mode to lowercase
-    mode = mode.lower()
-    
-    # Check for forbidden flags:
-    # 'w' = write (truncates/overwrites)
-    # 'a' = append (writes)
-    # 'x' = exclusive creation
-    # '+' = updating (read + write)
-    if 'w' in mode or 'a' in mode or 'x' in mode or '+' in mode:
-        raise PermissionError(f"Security: Writing/Modifying files is forbidden. Mode '{mode}' not allowed.")
-    
-    # If safe, proceed with the standard open
-    return open(file, mode, *args, **kwargs)
+from RestrictedPython import compile_restricted, safe_builtins
+from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getitem
+from RestrictedPython.Guards import guarded_iter_unpack_sequence
 
 def run_script(script: str) -> str:
-    # Redirect stdout and stderr to capture output
+    """
+    Executes script in a restricted namespace within the SAME process.
+    Prevents file access and imports.
+    """
     output = io.StringIO()
     
-    # We define the globals. 
-    # CRITICAL: We map 'open' to our 'safe_open' function.
+    # Define the strict whitelist of allowed functions
+    # safe_builtins includes: True, False, None, abs, len, str, int, etc.
+    # It expressly EXCLUDES: open, __import__, file, exec, eval
     restricted_globals = {
-        "__builtins__": {
-            "print": print,
-            "range": range,
-            "len": len,
-            "str": str,
-            "int": int,
-            "list": list,
-            "dict": dict,
-            "open": safe_open,
-             "__import__": __import__ # <--- WARNING
-        }
+        '__builtins__': safe_builtins,
+        '_getattr_': getattr,
+        '_getitem_': default_guarded_getitem,
+        '_getiter_': default_guarded_getiter,
+        '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
+        'print': lambda *args, **kwargs: print(*args, file=output, **kwargs),
+        'range': range,
+        'list': list,
+        'dict': dict,
     }
-    restricted_locals = {}
 
     try:
-        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
-            exec(script, restricted_globals, restricted_locals)
+        # Pre-compile catches syntax errors before execution
+        byte_code = compile_restricted(script, '<inline>', 'exec')
+        exec(byte_code, restricted_globals)
     except Exception as e:
-        return f"Error during execution: {e}"
-    
+        return f"Error: {e}"
+
     return output.getvalue()
