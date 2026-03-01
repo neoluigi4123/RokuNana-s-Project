@@ -139,7 +139,6 @@ class LLM:
         # Generation state tracking
         self.state = {
             "tool_usage": {
-                "selfieGeneration": 0,
                 "voiceMessageGeneration": 0,
             },
             "thinking": 0,
@@ -147,6 +146,7 @@ class LLM:
             "done": 0,
             "Avg_room_activity": 0,
             "Compliance": 0,
+            "extend_wait": False,
         }
 
         self.context = []
