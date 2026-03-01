@@ -633,7 +633,11 @@ class LLM:
             average_room_activity = 0
         
         self.state['Avg_room_activity'] = average_room_activity
-        self.state['Compliance'] = json.loads(constructed_response).get('compliance_willingness')
+
+        try:
+            self.state['Compliance'] = json.loads(constructed_response).get('compliance_willingness')
+        except:
+            print("no compliance value found")
 
         return constructed_response
 
