@@ -19,7 +19,7 @@ import rag_embedding
 
 load_dotenv()
 
-WAIT = 2000
+WAIT = 20
 
 download_dir = config.DOWNLOAD_PATH
 os.makedirs(download_dir, exist_ok=True) 
@@ -49,23 +49,40 @@ new_message_event = asyncio.Event()
 last_message_timestamp = None
 
 def download_youtube_video(url, output_path):
+    """Downloads a YouTube video. Returns the actual path of the downloaded file."""
+    # Strip any extension from output_path and let yt-dlp manage it
+    base_path = os.path.splitext(output_path)[0]
     ydl_opts = {
         'format': 'bestvideo[vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[vcodec^=avc1]',
-        'outtmpl': output_path,
+        'outtmpl': base_path + '.%(ext)s',
         'quiet': True,
         'no_warnings': True,
         'merge_output_format': 'mp4',
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl: # type: ignore
-        ydl.download([url])
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore
+        info = ydl.extract_info(url, download=True)
+        # Get the actual filename yt-dlp used
+        actual_path = ydl.prepare_filename(info)
+        # After merging, the extension will be .mp4
+        merged_path = os.path.splitext(actual_path)[0] + '.mp4'
+        if os.path.exists(merged_path):
+            return merged_path
+        if os.path.exists(actual_path):
+            return actual_path
+        raise FileNotFoundError(f"Downloaded file not found at {merged_path} or {actual_path}")
 
-def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, num_frames=20):
+def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, num_frames=8):
     """Extracts a specific number of evenly spaced frames from a video."""
+    # Use a dedicated subdirectory for frames to avoid deleting other files
+    frames_folder = os.path.join(output_folder, "frames")
+    os.makedirs(frames_folder, exist_ok=True)
+
     vidcap = cv2.VideoCapture(video_path)
     
     total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
     
     if total_frames == 0:
+        vidcap.release()
         return []
     
     # Calculate evenly spaced frame indices
@@ -76,16 +93,32 @@ def extract_frame(video_path, output_folder: str = config.PLACEHOLDER, num_frame
     
     saved_frames = []
     
-    # Clean output folder first
-    for f in os.listdir(output_folder):
-        os.remove(os.path.join(output_folder, f))
+    # Clean frames folder first (safe — only contains previously extracted frames)
+    for f in os.listdir(frames_folder):
+        file_path = os.path.join(frames_folder, f)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    
+    target_size = 700
     
     for idx, frame_num in enumerate(frame_indices):
         vidcap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
         success, image = vidcap.read()
         if success:
-            output_path = os.path.join(output_folder, f"frame_{idx:04d}.jpg")
-            cv2.imwrite(output_path, image)
+            # Resize while keeping aspect ratio, then pad to 700x700
+            h, w = image.shape[:2]
+            scale = target_size / max(h, w)
+            new_w, new_h = int(w * scale), int(h * scale)
+            resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            
+            # Create a black canvas and center the resized image
+            canvas = np.zeros((target_size, target_size, 3), dtype=np.uint8)
+            y_offset = (target_size - new_h) // 2
+            x_offset = (target_size - new_w) // 2
+            canvas[y_offset:y_offset + new_h, x_offset:x_offset + new_w] = resized
+            
+            output_path = os.path.join(frames_folder, f"frame_{idx:04d}.jpg")
+            cv2.imwrite(output_path, canvas)
             saved_frames.append(output_path)
     
     vidcap.release()
@@ -186,20 +219,33 @@ async def on_message(msg):
             video_path = os.path.join(download_dir, video_filename)
             
             try:
-                await asyncio.to_thread(download_youtube_video, video_url, video_path)
-                frames = await asyncio.to_thread(extract_frame, video_path, output_folder=download_dir)
+                # Use the actual path returned by the downloader
+                actual_video_path = await asyncio.to_thread(
+                    download_youtube_video, video_url, video_path
+                )
+                frames = await asyncio.to_thread(
+                    extract_frame, actual_video_path, output_folder=download_dir
+                )
                 image_paths += frames 
                 
-                audio_segment = AudioSegment.from_file(video_path)
+                audio_segment = AudioSegment.from_file(actual_video_path)
                 temp_audio_path = os.path.join(download_dir, f"{msg.id}_yt_temp.mp3")
                 audio_segment.export(temp_audio_path, format="mp3")
                 
-                transcription = await asyncio.to_thread(AI.transcribe_audio, temp_audio_path, msg.author.name)
+                transcription = await asyncio.to_thread(
+                    AI.transcribe_audio, temp_audio_path, msg.author.name
+                )
                 
-                content += f" sent a youtube video: {video_url}. (Audio Transcript: {transcription})"
+                content += (
+                    f" sent a youtube video: {video_url}. "
+                    f"(Audio Transcript: {transcription})"
+                )
                 
                 if os.path.exists(temp_audio_path):
                     os.remove(temp_audio_path)
+                # Clean up the video file too
+                if os.path.exists(actual_video_path):
+                    os.remove(actual_video_path)
                     
             except Exception as e:
                 print(f"Error processing YouTube link: {e}")
