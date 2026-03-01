@@ -636,8 +636,8 @@ class LLM:
 
         try:
             self.state['Compliance'] = json.loads(constructed_response).get('compliance_willingness')
-        except:
-            print("no compliance value found")
+        except Exception as e:
+            print(f"no compliance value found: {e}")
 
         return constructed_response
 
@@ -656,11 +656,11 @@ if __name__ == "__main__":
     r = AI.generate(
         prompt={
             "role": "user",
-            "content": "find the integration from 13 to 10 of 2xdx",
+            "content": "Yo",
         },
     )
 
     print(r)
-
+    print(AI.state['Compliance'])
     # Transcription test
     print(f"Audio Transcription:\n{AI.transcribe_audio(audio_path='output.mp3', biases='RokuNana')}")

@@ -6,6 +6,7 @@ To-Do:
 - Tools with feedbacks don't raise the wait time.
 - Add calendar tool to self.tool_mapping in core.py.
 - Roku Nana's voice messages format proper metadata
+- Parses shared links and extract data
 """
 
 import discord
