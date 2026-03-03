@@ -1,41 +1,57 @@
-# RokuNana-s-Project
-Allowing LLMs to do Multi-Party chat (with multiple users)
+
+# RokuNana's Project
+Allowing LLMs to naturally participate in Multi-Party Chat environments.
+
 # Table of Contents
+
 - [Project presentation](#project-presentation)
+   - [The Architecture: Single-Pass Generation](#the-architecture-single-pass-generation)
+   - [Real-Time Stream Parsing for Authentic UX](#real-time-stream-parsing-for-authentic-ux)
+   - [Seamless Multimedia & Tool Chaining](#seamless-multimedia--tool-chaining)
+   - [Autonomous Memory & Prefill Injection (RAG)](#autonomous-memory--prefill-injection-rag)
 - [Setup Instructions](#setup-instructions)
 - [Keys and configuration](#keys-and-configuration)
-# Project presentation
+
+
+## Project Presentation
+
+RokuNana isn't just another chatbot that mindlessly replies to every single prompt in a channel. It is a fully integrated team assistant designed specifically for multi-party group chats. It reads the room, maintains an internal monologue, processes multimedia in the background, and only chimes in when it actually has something valuable to add.
+
+Presentation video:
+
+https://www.youtube.com/watch?v=hPal1W1e6o4
 
 Pipeline chart:
 
 <img width="3219" height="3273" alt="image" src="https://github.com/user-attachments/assets/8d625780-db2a-4f01-950c-97d9bae0df4d" />
 
-# Pipeline description:
+### The Architecture: Single-Pass Generation
+Most AI agents rely on clunky, multi-step loops to function in a group chat. They usually run one prompt to decide if they should reply, another to pick a tool, and a third to generate the text. RokuNana strips all that overhead away.
 
-1. The user initiates a conversation with the system, which is designed to handle multi-party interactions.
-2. The system processes the user's input and generates a response using a language model (LLM), which is capable of understanding and managing conversations with multiple participants.
-3. The system then checks if the response contains any actionable items, such as scheduling a meeting or setting a reminder.
-4. If actionable items are detected, the system interacts with the Google Calendar API to perform the necessary actions, such as creating events or sending invitations.
-5. The system continues the conversation, allowing for further interactions and updates as needed.
+We built a single-pass generation architecture. By leveraging dynamic Pydantic schemas (as seen in `core.py`), the model generates its entire state in one continuous JSON stream. In a single execution, RokuNana evaluates the social context, calculates its own "compliance willingness," updates its internal thoughts, proposes tools, and decides whether to output a reply. There is no looped agent constantly polling itself—just one clean, efficient generation that dictates the bot's entire behavior for that interaction.
 
-# Functionalities:
+### Real-Time Stream Parsing for Authentic UX
+To make RokuNana feel truly alive, the Discord integration in `main.py` relies on a real-time JSON stream parser. 
 
-- Multi-party chat: The system can handle conversations involving multiple users, allowing for dynamic interactions and responses.
-- websearch integration: The system can perform web searches to gather information and provide relevant responses based on the user's queries.
-- YouTube search integration: The system can search for YouTube videos and provide links or summaries based on the user's requests.
-- Video support (both local file and Youtube direct urls): The system can process and respond to video content, whether it's a local file or a YouTube URL.
-- image support (both local file and web urls): The system can handle image content, allowing users to share and discuss images within the conversation.
-- audio support (both local file and web urls): The system can process audio content, enabling users to share and discuss audio files or links within the conversation.
-- python (math, plotting, data analysis, etc) support: The system can execute Python code for various purposes, such as performing mathematical calculations, creating plots, or analyzing data, and then share the results within the conversation.
-- attachment support: The system can manage attachments, allowing users to share files and documents within the conversation.
-- Google Calendar API integration: The system can interact with the Google Calendar API to manage events, schedule meetings, and send invitations based on the conversation's context and user requests.
-- advanced rag (retrieval-augmented generation) capabilities: The system can retrieve relevant information from external sources and use it to generate more informed and accurate responses during the conversation.
-- prefilling the context of the conversation with relevant information (e.g. from the user's calendar, web search results, etc) to make the conversation more efficient and personalized.
-- advanced pipeline architecture.
-- group chat support: The system can facilitate group chats, allowing multiple users to participate in a single conversation thread.
+When a conversation updates, RokuNana quietly starts processing. As the LLM streams its response, our parser hunts for specific fields on the fly. RokuNana takes time to "think" and evaluate the context in the background, but the moment the stream hits the `target_user` and `reply` fields, the Discord typing indicator is instantly triggered. If the model decides to stay silent and ignore the conversation, the typing animation never fires. From the user's perspective, this eliminates the robotic instant-reply feel; it acts exactly like a human reading the chat, deciding to weigh in, and typing out their thoughts.
 
+### Seamless Multimedia & Tool Chaining
+RokuNana handles context richly and natively. 
 
-# Setup Instructions
+When someone drops a YouTube link or uploads a video, the system doesn't just read the URL or file name. It actively downloads the media using `yt_dlp`, extracts evenly spaced visual frames using OpenCV, and transcribes the audio track using Mistral's transcription API. This combined audiovisual data is injected straight into the conversation context.
+
+The assistant is also fully equipped to interact with the real world. It can run Python scripts (not in an isolated environment yet, but it can be solved using docker) to solve math equations or analyze data, browse the web for up-to-date context, generate voice messages via ElevenLabs, and integrate with the Google Calendar API to manage your team's schedule. Everything RokuNana learns is indexed into a custom RAG (Retrieval-Augmented Generation) memory pipeline, allowing it to naturally recall facts about users and past conversations over time (see a bit lower).
+
+### Autonomous Memory & Prefill Injection (RAG)
+Most conversational bots handle memory by simply stuffing past chat logs into the system prompt until they run out of tokens, leading to high latency and context dilution. RokuNana takes a much more deliberate approach by building an internal, semantic knowledge base that it governs itself.
+
+Because RokuNana relies on a dynamic single-pass JSON schema, the model is continuously evaluating the conversation for new information. We built an `unknown_fact` field directly into its thought process. While the bot is generating its response, if it realizes a user just shared a new preference, trait, or context it didn't previously know, it organically extracts that detail into the JSON stream. The parser catches this in real-time and silently commits it to a ChromaDB vector store using Mistral's embedding models. There is no separate background agent summarizing logs—RokuNana decides what is worth remembering exactly when it learns it.
+
+The way this memory is retrieved and applied is equally seamless. When new messages arrive in the chat, `main.py` queries the vector database to pull up to four highly relevant past facts. But rather than pasting these facts into the system prompt where the model might ignore them, we use a technique called **Assistant Prefilling**. 
+
+Inside `core.py`, the retrieved memories are injected *as the assistant's own starting output* (e.g., forcing the generation to begin with `(Temporal memory: User x needs their code in Python 3.10)`). By prefilling the beginning of the model's response sequence with this data, we force the LLM to structurally acknowledge the memory right before it constructs its `MessageSchema`. This guarantees the model factors its past learnings into its current social context and tool selection, resulting in a persistent, hallucination-free memory that scales indefinitely.
+
+## Setup Instructions
 
 1. Clone the repository and navigate to the project directory.
    ```bash
@@ -56,7 +72,7 @@ Pipeline chart:
 
 4. Set up Google Calendar API credentials:
 
-   - Go to the [Google Cloud Console](https://console.cloud.google.com/).
+   - Go to the[Google Cloud Console](https://console.cloud.google.com/).
      
     - Create a new project.
       
@@ -112,17 +128,28 @@ Pipeline chart:
 ![bandicam 2026-02-28 16-13-35-030](https://github.com/user-attachments/assets/8a2ecdd2-12e3-4b64-94d0-f8d67187284c)
 ![bandicam 2026-02-28 16-13-46-205](https://github.com/user-attachments/assets/7316d381-4feb-4508-8d9a-4687c9e78393)
 
+6. Discord:
 
-6. Run the main application:
+You also require to setup a discord bot in the discord dev portal and get its token.
+
+Once you got it, you can head over the config.py and specify the name of your discord bot in the SYSTEM_PROMPT.
+
+7. Run the main application:
     ```bash
     python main.py
     ```
 
-# Keys and configuration
-- Create a `.env` file in the root of the project and add the following variables with your own values:
+## Keys and configuration
+Create a `.env` file in the root of the project and add the following variables with your own values:
 ```python
 # ElevenLabs API configuration
 MISTRAL_API_KEY=PUT_YOUR_ACTUAL_MISTRAL_API_KEY_HERE
 DISCORD_BOT_TOKEN=PUT_YOUR_ACTUAL_DISCORD_BOT_TOKEN_HERE
 ELEVENLABS_API_KEY=PUT_YOUR_ACTUAL_ELEVENLABS_API_KEY_HERE
 ```
+
+---
+
+Since this project was part of an hackaton, it will not be updated anymore. If you're having any issue with the setup or the script itself, you can contact the devs on discord (neo_luigi). note that this script works best with python 1.12+ and may fails to run at 3.11 or less.
+
+# Made with Love, Passion and LOT of Fun.
